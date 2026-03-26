@@ -65,7 +65,7 @@
 - Each action linked to an operator
 - Role-based visibility (tech vs supervisor vs admin)
 
-## Technical Debt
+## Planned Evolutions
 - Port to Go binary for zero-dependency deployment
 - Automated tests (pytest)
 - README with setup/backup instructions
