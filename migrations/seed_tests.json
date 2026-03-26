@@ -1,0 +1,20 @@
+[
+    {"code": "MAL_RDT", "name_en": "Malaria RDT", "name_fr": "TDR Paludisme", "category": "PARASITOLOGY", "specimen_types": ["BLOOD"], "result_type": "POSITIVE_NEGATIVE", "display_order": 1},
+    {"code": "MAL_BS", "name_en": "Malaria Blood Smear", "name_fr": "Goutte Epaisse", "category": "PARASITOLOGY", "specimen_types": ["BLOOD"], "result_type": "TEXT", "display_order": 2},
+    {"code": "CBC", "name_en": "CBC", "name_fr": "NFS", "category": "HEMATOLOGY", "specimen_types": ["BLOOD"], "result_type": "TEXT", "display_order": 3},
+    {"code": "HB", "name_en": "Hemoglobin", "name_fr": "Hemoglobine", "category": "HEMATOLOGY", "specimen_types": ["BLOOD"], "result_type": "NUMERIC", "unit": "g/dL", "reference_range_text": "12-16 g/dL", "display_order": 4},
+    {"code": "BG", "name_en": "Blood Group", "name_fr": "Groupe Sanguin", "category": "HEMATOLOGY", "specimen_types": ["BLOOD"], "result_type": "BLOOD_GROUP", "display_order": 5},
+    {"code": "GLU", "name_en": "Glucose", "name_fr": "Glycemie", "category": "BIOCHEMISTRY", "specimen_types": ["BLOOD"], "result_type": "NUMERIC", "unit": "mmol/L", "display_order": 6},
+    {"code": "CREAT", "name_en": "Creatinine", "name_fr": "Creatinine", "category": "BIOCHEMISTRY", "specimen_types": ["BLOOD"], "result_type": "NUMERIC", "unit": "umol/L", "display_order": 7},
+    {"code": "CRP", "name_en": "CRP", "name_fr": "CRP", "category": "BIOCHEMISTRY", "specimen_types": ["BLOOD"], "result_type": "NUMERIC", "unit": "mg/L", "display_order": 8},
+    {"code": "TGO", "name_en": "AST/TGO", "name_fr": "TGO/ASAT", "category": "BIOCHEMISTRY", "specimen_types": ["BLOOD"], "result_type": "NUMERIC", "unit": "U/L", "display_order": 9},
+    {"code": "TGP", "name_en": "ALT/TGP", "name_fr": "TGP/ALAT", "category": "BIOCHEMISTRY", "specimen_types": ["BLOOD"], "result_type": "NUMERIC", "unit": "U/L", "display_order": 10},
+    {"code": "HBA1C", "name_en": "HbA1C", "name_fr": "HbA1C", "category": "BIOCHEMISTRY", "specimen_types": ["BLOOD"], "result_type": "NUMERIC", "unit": "%", "display_order": 11},
+    {"code": "HIV_RDT", "name_en": "HIV RDT", "name_fr": "TDR VIH", "category": "SEROLOGY", "specimen_types": ["BLOOD"], "result_type": "POSITIVE_NEGATIVE", "display_order": 12},
+    {"code": "SYPH_RDT", "name_en": "Syphilis RDT", "name_fr": "TDR Syphilis", "category": "SEROLOGY", "specimen_types": ["BLOOD"], "result_type": "POSITIVE_NEGATIVE", "display_order": 13},
+    {"code": "HBV_RDT", "name_en": "HBV RDT", "name_fr": "TDR VHB", "category": "SEROLOGY", "specimen_types": ["BLOOD"], "result_type": "POSITIVE_NEGATIVE", "display_order": 14},
+    {"code": "HCV_RDT", "name_en": "HCV RDT", "name_fr": "TDR VHC", "category": "SEROLOGY", "specimen_types": ["BLOOD"], "result_type": "POSITIVE_NEGATIVE", "display_order": 15},
+    {"code": "URINE", "name_en": "Urinalysis", "name_fr": "Analyse Urine", "category": "URINALYSIS", "specimen_types": ["URINE"], "result_type": "TEXT", "display_order": 16},
+    {"code": "STOOL", "name_en": "Stool Analysis", "name_fr": "Analyse Selles", "category": "PARASITOLOGY", "specimen_types": ["STOOL"], "result_type": "TEXT", "display_order": 17},
+    {"code": "CSF", "name_en": "CSF Analysis", "name_fr": "Analyse LCR", "category": "OTHER", "specimen_types": ["CSF"], "result_type": "TEXT", "display_order": 18}
+]

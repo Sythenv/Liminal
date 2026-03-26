@@ -1,0 +1,10 @@
+data/
+lib/
+__pycache__/
+*.pyc
+.deps_installed
+.venv/
+*.db
+*.db-wal
+*.db-shm
+lab-register*.jpg

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ site_name }} - MSF Lab Register</title>
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<header class="msf-header">
+    <div class="msf-brand">
+        <span class="msf-logo">MSF</span>
+        <span class="msf-title">{{ site_name }}</span>
+    </div>
+    <nav class="msf-nav">
+        <a href="/register" class="nav-link" data-i18n="nav_register">Register</a>
+        <a href="/export" class="nav-link" data-i18n="nav_export">Export</a>
+        <a href="/settings" class="nav-link" data-i18n="nav_settings">Settings</a>
+        <button onclick="toggleLang()" class="lang-toggle" id="langToggle">FR</button>
+    </nav>
+</header>
+
+<main class="content">
+    {% block content %}{% endblock %}
+</main>
+
+<script src="/static/js/i18n.js"></script>
+{% block scripts %}{% endblock %}
+
+</body>
+</html>

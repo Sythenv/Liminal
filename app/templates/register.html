@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- TODAY'S HEADER -->
+<div class="day-header">
+    <button onclick="changeDay(-1)" class="day-nav">&larr;</button>
+    <div class="day-display">
+        <span class="day-label" data-i18n="today">Today</span>
+        <span class="day-date" id="currentDate"></span>
+        <span class="day-count" id="entryCount"></span>
+    </div>
+    <button onclick="changeDay(1)" class="day-nav">&rarr;</button>
+</div>
+
+<!-- SAMPLE CARDS -->
+<div class="card-list" id="cardList"></div>
+
+<!-- EMPTY STATE -->
+<div id="emptyState" class="empty-state" style="display:none">
+    <div class="empty-icon">🔬</div>
+    <p data-i18n="no_samples">No samples registered today</p>
+    <p class="empty-hint" data-i18n="tap_to_add">Tap the button below to register a new sample</p>
+</div>
+
+<!-- FAB - New Entry -->
+<button class="fab" onclick="startNewEntry()" title="New sample">
+    <span class="fab-icon">+</span>
+</button>
+
+<!-- ===== WIZARD MODAL ===== -->
+<div id="wizardModal" class="wizard-overlay" style="display:none">
+    <div class="wizard-container">
+
+        <!-- STEP 1: Patient -->
+        <div class="wizard-step" id="step1">
+            <div class="wizard-header">
+                <span class="step-indicator">1 / 3</span>
+                <h2 data-i18n="patient_info">Patient</h2>
+                <button onclick="closeWizard()" class="wizard-close">&times;</button>
+            </div>
+            <div class="wizard-body">
+                <div class="big-field">
+                    <label data-i18n="patient_name">Patient Name</label>
+                    <input type="text" id="wPatientName" class="big-input" autocomplete="off" placeholder="">
+                    <div id="wSuggestions" class="suggestions"></div>
+                </div>
+                <div class="field-row">
+                    <div class="big-field half">
+                        <label data-i18n="age">Age</label>
+                        <div class="age-input">
+                            <input type="number" id="wAge" class="big-input" min="0" max="120">
+                            <div class="age-unit-btns">
+                                <button type="button" class="unit-btn active" data-unit="Y">Y</button>
+                                <button type="button" class="unit-btn" data-unit="M">M</button>
+                                <button type="button" class="unit-btn" data-unit="D">D</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="big-field half">
+                        <label data-i18n="sex">Sex</label>
+                        <div class="sex-btns">
+                            <button type="button" class="sex-btn" data-sex="M">M</button>
+                            <button type="button" class="sex-btn" data-sex="F">F</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="big-field">
+                    <label data-i18n="ward">Ward</label>
+                    <div class="ward-btns" id="wardBtns">
+                        <button type="button" class="ward-btn" data-ward="OPD">OPD</button>
+                        <button type="button" class="ward-btn" data-ward="IPD">IPD</button>
+                        <button type="button" class="ward-btn" data-ward="PED">PED</button>
+                        <button type="button" class="ward-btn" data-ward="ER">ER</button>
+                        <button type="button" class="ward-btn" data-ward="MATER">MATER</button>
+                        <button type="button" class="ward-btn" data-ward="ICU">ICU</button>
+                        <button type="button" class="ward-btn" data-ward="ITFC">ITFC</button>
+                        <button type="button" class="ward-btn" data-ward="NCD">NCD</button>
+                    </div>
+                </div>
+            </div>
+            <div class="wizard-footer">
+                <button onclick="closeWizard()" class="wiz-btn wiz-btn-cancel" data-i18n="cancel">Cancel</button>
+                <button onclick="goStep(2)" class="wiz-btn wiz-btn-next" data-i18n="next">Next &rarr;</button>
+            </div>
+        </div>
+
+        <!-- STEP 2: Tests -->
+        <div class="wizard-step" id="step2" style="display:none">
+            <div class="wizard-header">
+                <span class="step-indicator">2 / 3</span>
+                <h2 data-i18n="select_tests">Select Tests</h2>
+                <button onclick="closeWizard()" class="wizard-close">&times;</button>
+            </div>
+            <div class="wizard-body">
+                <div id="testCategories" class="test-categories"></div>
+            </div>
+            <div class="wizard-footer">
+                <button onclick="goStep(1)" class="wiz-btn wiz-btn-back" data-i18n="back">&larr; Back</button>
+                <button onclick="goStep(3)" class="wiz-btn wiz-btn-next" data-i18n="next">Next &rarr;</button>
+            </div>
+        </div>
+
+        <!-- STEP 3: Confirm -->
+        <div class="wizard-step" id="step3" style="display:none">
+            <div class="wizard-header">
+                <span class="step-indicator">3 / 3</span>
+                <h2 data-i18n="confirm">Confirm</h2>
+                <button onclick="closeWizard()" class="wizard-close">&times;</button>
+            </div>
+            <div class="wizard-body">
+                <div class="confirm-summary" id="confirmSummary"></div>
+            </div>
+            <div class="wizard-footer">
+                <button onclick="goStep(2)" class="wiz-btn wiz-btn-back" data-i18n="back">&larr; Back</button>
+                <button onclick="submitEntry()" class="wiz-btn wiz-btn-confirm" data-i18n="register_sample">Register Sample</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== RESULT ENTRY MODAL ===== -->
+<div id="resultModal" class="wizard-overlay" style="display:none">
+    <div class="wizard-container">
+        <div class="wizard-header">
+            <span class="step-indicator" id="resultPatientName"></span>
+            <h2 data-i18n="enter_results">Enter Results</h2>
+            <button onclick="closeResultModal()" class="wizard-close">&times;</button>
+        </div>
+        <div class="wizard-body">
+            <div id="resultFields" class="result-fields"></div>
+        </div>
+        <div class="wizard-footer">
+            <button onclick="closeResultModal()" class="wiz-btn wiz-btn-cancel" data-i18n="close">Close</button>
+            <button onclick="saveResults()" class="wiz-btn wiz-btn-confirm" data-i18n="save_results">Save Results</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== SUCCESS OVERLAY ===== -->
+<div id="successOverlay" class="success-overlay" style="display:none">
+    <div class="success-content">
+        <div class="success-check">&#10003;</div>
+        <div class="success-text" id="successText" data-i18n="registered">Registered!</div>
+        <div class="success-lab-number" id="successLabNumber"></div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/register.js"></script>
+{% endblock %}

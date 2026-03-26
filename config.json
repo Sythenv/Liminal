@@ -1,0 +1,10 @@
+{
+    "site_name": "Aweil Civil Hospital",
+    "site_code": "AWL",
+    "country": "SSD",
+    "default_language": "en",
+    "lab_number_format": "{site_code}-{year}-{seq:04d}",
+    "host": "127.0.0.1",
+    "port": 5000,
+    "debug": false
+}
