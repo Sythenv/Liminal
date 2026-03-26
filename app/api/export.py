@@ -145,7 +145,18 @@ def export_csv():
 @bp.route('/download/<filename>', methods=['GET'])
 def download(filename):
     """Serve an export file for download."""
-    filepath = os.path.join(current_app.config['DATA_DIR'], 'exports', filename)
+    # Security: prevent path traversal
+    safe_name = os.path.basename(filename)
+    if safe_name != filename or '..' in filename:
+        return jsonify({'error': 'Invalid filename'}), 400
+
+    exports_dir = os.path.join(current_app.config['DATA_DIR'], 'exports')
+    filepath = os.path.realpath(os.path.join(exports_dir, safe_name))
+
+    # Verify resolved path is still within exports directory
+    if not filepath.startswith(os.path.realpath(exports_dir)):
+        return jsonify({'error': 'Invalid filename'}), 400
+
     if not os.path.exists(filepath):
         return jsonify({'error': 'File not found'}), 404
     return send_file(filepath, as_attachment=True)

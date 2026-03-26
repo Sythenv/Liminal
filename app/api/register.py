@@ -1,11 +1,26 @@
 """Laboratory Register API - CRUD operations."""
 
+import re
 import json
 from datetime import datetime
 from flask import Blueprint, request, jsonify, current_app
 from app.db import get_db
 
 bp = Blueprint('register', __name__)
+
+# Input validation
+MAX_FIELD_LEN = 200
+ALLOWED_SEX = {'M', 'F', None, ''}
+ALLOWED_STATUS = {'REGISTERED', 'IN_PROGRESS', 'COMPLETED', 'REJECTED'}
+DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
+TIME_RE = re.compile(r'^\d{2}:\d{2}$')
+
+
+def sanitize_str(val, max_len=MAX_FIELD_LEN):
+    """Strip and truncate string input."""
+    if val is None:
+        return None
+    return str(val).strip()[:max_len]
 
 
 def generate_lab_number():
@@ -71,6 +86,24 @@ def create_entry():
     db = get_db()
     data = request.get_json()
 
+    # Validate required fields
+    patient_name = sanitize_str(data.get('patient_name'))
+    if not patient_name:
+        return jsonify({'error': 'patient_name is required'}), 400
+
+    sex = data.get('sex')
+    if sex not in ALLOWED_SEX:
+        return jsonify({'error': 'Invalid sex value'}), 400
+
+    age = data.get('age')
+    if age is not None:
+        try:
+            age = int(age)
+            if age < 0 or age > 200:
+                return jsonify({'error': 'Invalid age'}), 400
+        except (ValueError, TypeError):
+            return jsonify({'error': 'Invalid age'}), 400
+
     lab_number = generate_lab_number()
 
     db.execute('''INSERT INTO lab_register
@@ -81,16 +114,16 @@ def create_entry():
         (lab_number,
          data.get('reception_date', datetime.now().strftime('%Y-%m-%d')),
          data.get('reception_time', datetime.now().strftime('%H:%M')),
-         data['patient_name'],
-         data.get('patient_id'),
-         data.get('age'),
-         data.get('age_unit', 'Y'),
-         data.get('sex'),
-         data.get('ward'),
-         data.get('requesting_clinician'),
-         data.get('specimen_type'),
-         data.get('technician_initials'),
-         data.get('remarks')))
+         patient_name,
+         sanitize_str(data.get('patient_id'), 50),
+         age,
+         sanitize_str(data.get('age_unit', 'Y'), 1),
+         sex or None,
+         sanitize_str(data.get('ward'), 20),
+         sanitize_str(data.get('requesting_clinician')),
+         sanitize_str(data.get('specimen_type'), 20),
+         sanitize_str(data.get('technician_initials'), 5),
+         sanitize_str(data.get('remarks'))))
 
     entry_id = db.execute('SELECT last_insert_rowid()').fetchone()[0]
 

@@ -2,7 +2,7 @@
 
 import os
 import json
-from flask import Flask, redirect, url_for
+from flask import Flask, redirect, url_for, request, jsonify
 
 
 def create_app(config_path=None):
@@ -47,6 +47,34 @@ def create_app(config_path=None):
     # Page routes
     from .pages import bp as pages_bp
     app.register_blueprint(pages_bp)
+
+    # Security headers
+    @app.after_request
+    def set_security_headers(response):
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; "
+            "script-src 'self'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "connect-src 'self'; "
+            "frame-ancestors 'none'"
+        )
+        return response
+
+    # Input validation: reject oversized payloads
+    app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024  # 1MB max
+
+    # Bind safety: force localhost only
+    @app.before_request
+    def check_host():
+        allowed = ('127.0.0.1', 'localhost')
+        host = request.host.split(':')[0]
+        if host not in allowed:
+            return jsonify({'error': 'Access denied'}), 403
 
     @app.route('/')
     def index():

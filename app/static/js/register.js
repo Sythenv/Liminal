@@ -6,6 +6,14 @@ let wizardData = {};
 let currentEntryId = null;
 let debounceTimer = null;
 
+// ===== SECURITY: HTML escaping =====
+function esc(str) {
+    if (str == null) return '';
+    const d = document.createElement('div');
+    d.textContent = String(str);
+    return d.innerHTML;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // Load tests first, then entries
     fetch('/api/config/tests').then(r => r.json()).then(tests => {
@@ -68,32 +76,32 @@ function renderCards(entries) {
     empty.style.display = 'none';
 
     list.innerHTML = entries.map(entry => {
-        const statusClass = `status-${entry.status.toLowerCase()}`;
-        const statusLabel = entry.status.toLowerCase().replace('_', ' ');
-        const age = entry.age ? `${entry.age}${entry.age_unit || 'Y'}` : '';
-        const details = [age, entry.sex, entry.ward].filter(Boolean).join(' · ');
+        const statusClass = `status-${esc(entry.status).toLowerCase()}`;
+        const statusLabel = esc(entry.status).toLowerCase().replace('_', ' ');
+        const age = entry.age ? `${esc(entry.age)}${esc(entry.age_unit || 'Y')}` : '';
+        const details = [age, esc(entry.sex), esc(entry.ward)].filter(Boolean).join(' \u00b7 ');
 
-        // Test badges
+        // Test badges -- test codes are from DB config (trusted), but result values are user input
         const badges = currentTests.map(t => {
             const r = entry.results[t.code];
             if (!r || !r.requested) return '';
-            const name = lang === 'fr' ? t.name_fr : t.name_en;
+            const name = esc(t.name_en);
             let cls = 'card-test-badge';
             if (r.result_value) {
                 const v = r.result_value.toUpperCase();
                 if (v === 'POS' || v === 'POSITIVE' || v === '+') cls += ' result-positive';
                 else cls += ' has-result';
             }
-            return `<span class="${cls}" title="${name}">${t.code}${r.result_value ? ': ' + r.result_value : ''}</span>`;
+            return `<span class="${cls}" title="${name}">${esc(t.code)}${r.result_value ? ': ' + esc(r.result_value) : ''}</span>`;
         }).filter(Boolean).join('');
 
         return `
-        <div class="sample-card ${statusClass}" onclick="openResults(${entry.id})">
+        <div class="sample-card ${statusClass}" onclick="openResults(${parseInt(entry.id)})">
             <div class="card-top">
-                <span class="card-lab-number">${entry.lab_number}</span>
-                <span class="card-status ${entry.status.toLowerCase()}">${statusLabel}</span>
+                <span class="card-lab-number">${esc(entry.lab_number)}</span>
+                <span class="card-status ${esc(entry.status).toLowerCase()}">${statusLabel}</span>
             </div>
-            <div class="card-patient">${entry.patient_name}</div>
+            <div class="card-patient">${esc(entry.patient_name)}</div>
             <div class="card-details">${details}</div>
             <div class="card-tests">${badges}</div>
         </div>`;
@@ -176,26 +184,26 @@ function buildConfirmSummary() {
 
     document.getElementById('confirmSummary').innerHTML = `
         <div class="confirm-row">
-            <span class="confirm-label">${lang === 'fr' ? 'Patient' : 'Patient'}</span>
-            <span class="confirm-value">${wizardData.patient_name || '-'}</span>
+            <span class="confirm-label">Patient</span>
+            <span class="confirm-value">${esc(wizardData.patient_name) || '-'}</span>
         </div>
         <div class="confirm-row">
-            <span class="confirm-label">${lang === 'fr' ? 'Age' : 'Age'}</span>
-            <span class="confirm-value">${wizardData.age ? wizardData.age + wizardData.age_unit : '-'}</span>
+            <span class="confirm-label">Age</span>
+            <span class="confirm-value">${wizardData.age ? esc(wizardData.age) + esc(wizardData.age_unit) : '-'}</span>
         </div>
         <div class="confirm-row">
-            <span class="confirm-label">${lang === 'fr' ? 'Sexe' : 'Sex'}</span>
-            <span class="confirm-value">${wizardData.sex || '-'}</span>
+            <span class="confirm-label">Sex</span>
+            <span class="confirm-value">${esc(wizardData.sex) || '-'}</span>
         </div>
         <div class="confirm-row">
-            <span class="confirm-label">${lang === 'fr' ? 'Service' : 'Ward'}</span>
-            <span class="confirm-value">${wizardData.ward || '-'}</span>
+            <span class="confirm-label">Ward</span>
+            <span class="confirm-value">${esc(wizardData.ward) || '-'}</span>
         </div>
         <div class="confirm-row">
-            <span class="confirm-label">${lang === 'fr' ? 'Analyses' : 'Tests'} (${testNames.length})</span>
+            <span class="confirm-label">Tests (${parseInt(testNames.length)})</span>
         </div>
         <div class="confirm-tests">
-            ${testNames.map(n => `<span class="confirm-test-tag">${n}</span>`).join('')}
+            ${testNames.map(n => `<span class="confirm-test-tag">${esc(n)}</span>`).join('')}
         </div>
     `;
 }
@@ -259,38 +267,70 @@ function openResults(entryId) {
                 const r = entry.results[t.code];
                 if (!r || !r.requested) return;
 
-                const name = lang === 'fr' ? t.name_fr : t.name_en;
+                const name = esc(t.name_en);
                 const currentVal = r.result_value || '';
-
-                let inputHtml = '';
-                if (t.result_type === 'POSITIVE_NEGATIVE') {
-                    inputHtml = `
-                    <div class="posneg-btns">
-                        <button type="button" class="posneg-btn pos ${currentVal === 'POS' ? 'selected' : ''}"
-                            onclick="selectPosNeg(this, '${t.code}', 'POS')">POS</button>
-                        <button type="button" class="posneg-btn neg ${currentVal === 'NEG' ? 'selected' : ''}"
-                            onclick="selectPosNeg(this, '${t.code}', 'NEG')">NEG</button>
-                    </div>`;
-                } else if (t.result_type === 'BLOOD_GROUP') {
-                    inputHtml = `<div class="bg-btns">
-                        ${['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(bg =>
-                            `<button type="button" class="bg-btn ${currentVal === bg ? 'selected' : ''}"
-                                onclick="selectBG(this, '${t.code}', '${bg}')">${bg}</button>`
-                        ).join('')}
-                    </div>`;
-                } else if (t.result_type === 'NUMERIC') {
-                    inputHtml = `
-                    <div class="result-numeric">
-                        <input type="number" step="any" value="${currentVal}" data-code="${t.code}" class="result-input">
-                        <span class="result-unit">${t.unit || ''}</span>
-                    </div>`;
-                } else {
-                    inputHtml = `<input type="text" value="${currentVal}" data-code="${t.code}" class="result-text-input result-input">`;
-                }
+                const safeCode = esc(t.code);
 
                 const item = document.createElement('div');
                 item.className = 'result-item';
-                item.innerHTML = `<div class="result-item-name">${name}</div>${inputHtml}`;
+
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'result-item-name';
+                nameDiv.textContent = t.name_en;
+                item.appendChild(nameDiv);
+
+                if (t.result_type === 'POSITIVE_NEGATIVE') {
+                    const container = document.createElement('div');
+                    container.className = 'posneg-btns';
+                    ['POS', 'NEG'].forEach(val => {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = `posneg-btn ${val.toLowerCase()} ${currentVal === val ? 'selected' : ''}`;
+                        btn.textContent = val;
+                        btn.dataset.code = t.code;
+                        btn.dataset.value = val;
+                        btn.onclick = function() { selectPosNeg(this, t.code, val); };
+                        container.appendChild(btn);
+                    });
+                    item.appendChild(container);
+                } else if (t.result_type === 'BLOOD_GROUP') {
+                    const container = document.createElement('div');
+                    container.className = 'bg-btns';
+                    ['A+','A-','B+','B-','AB+','AB-','O+','O-'].forEach(bg => {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = `bg-btn ${currentVal === bg ? 'selected' : ''}`;
+                        btn.textContent = bg;
+                        btn.dataset.code = t.code;
+                        btn.dataset.value = bg;
+                        btn.onclick = function() { selectBG(this, t.code, bg); };
+                        container.appendChild(btn);
+                    });
+                    item.appendChild(container);
+                } else if (t.result_type === 'NUMERIC') {
+                    const container = document.createElement('div');
+                    container.className = 'result-numeric';
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.step = 'any';
+                    input.value = currentVal;
+                    input.dataset.code = t.code;
+                    input.className = 'result-input';
+                    container.appendChild(input);
+                    const unit = document.createElement('span');
+                    unit.className = 'result-unit';
+                    unit.textContent = t.unit || '';
+                    container.appendChild(unit);
+                    item.appendChild(container);
+                } else {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = currentVal;
+                    input.dataset.code = t.code;
+                    input.className = 'result-text-input result-input';
+                    item.appendChild(input);
+                }
+
                 fields.appendChild(item);
             });
 
