@@ -9,3 +9,4 @@ __pycache__/
 *.db-shm
 lab-register*.jpg
 references/
+!references/RESEARCH_NOTES_*.md
