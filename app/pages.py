@@ -12,6 +12,13 @@ def register():
                            lang=current_app.config['DEFAULT_LANGUAGE'])
 
 
+@bp.route('/reports')
+def reports():
+    return render_template('reports.html',
+                           site_name=current_app.config['SITE_NAME'],
+                           lang=current_app.config['DEFAULT_LANGUAGE'])
+
+
 @bp.route('/export')
 def export():
     return render_template('export.html',

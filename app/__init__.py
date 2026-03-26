@@ -39,10 +39,12 @@ def create_app(config_path=None):
     from .api.patients import bp as patients_bp
     from .api.export import bp as export_bp
     from .api.config_api import bp as config_bp
+    from .api.reports import bp as reports_bp
     app.register_blueprint(register_bp, url_prefix='/api/register')
     app.register_blueprint(patients_bp, url_prefix='/api/patients')
     app.register_blueprint(export_bp, url_prefix='/api/export')
     app.register_blueprint(config_bp, url_prefix='/api/config')
+    app.register_blueprint(reports_bp, url_prefix='/api/reports')
 
     # Page routes
     from .pages import bp as pages_bp
