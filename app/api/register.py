@@ -445,8 +445,15 @@ def validate_entry(entry_id):
     # Four-eyes rule: validator must differ from person who entered results
     from app.auth import check_four_eyes
     four_eyes_error = check_four_eyes(db, entry_id, operator)
-    if four_eyes_error:
-        return jsonify({'error': four_eyes_error}), 403
+    bypass = data.get('bypass_four_eyes', False)
+    if four_eyes_error and not bypass:
+        return jsonify({'error': four_eyes_error, 'four_eyes': True}), 403
+    if four_eyes_error and bypass:
+        # Log non-conformity
+        log_action(db, 'FOUR_EYES_BYPASS', 'lab_register', entry_id,
+                   [('bypass_reason', None, 'Self-validation override'),
+                    ('operator', None, operator)],
+                   operator)
 
     # Get results being validated for audit
     results = db.execute('''SELECT td.code, lr.result_value FROM lab_result lr

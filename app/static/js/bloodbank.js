@@ -709,7 +709,7 @@ function openIssueUnit() {
             body: JSON.stringify(payload)
         }).then(r => {
             if (r.ok) { closeModal(); loadTransfusions(); }
-            else { r.json().then(d => alert(d.error || 'Error')); }
+            else { r.json().then(d => showModal({ title: 'Error', message: d.error || 'Error', type: 'danger' })); }
         });
     });
     footer.appendChild(cancelBtn);

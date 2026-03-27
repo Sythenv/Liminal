@@ -225,6 +225,86 @@ function createBarcode(text, opts) {
     return svg;
 }
 
+// ===== MODAL SYSTEM =====
+
+/**
+ * Show a modal dialog. Replaces native alert/confirm/prompt.
+ * @param {Object} opts
+ * @param {string} opts.title - Modal title
+ * @param {string} opts.message - Body text (supports HTML)
+ * @param {string} opts.type - 'info' | 'warning' | 'danger' | 'success' (default: 'info')
+ * @param {Array} opts.actions - [{label, cls, callback}] buttons. Default: OK button.
+ *   cls: 'primary' | 'danger' | 'cancel' | 'ghost'
+ * @returns {HTMLElement} the overlay (auto-removed on close)
+ *
+ * Usage:
+ *   showModal({ title: 'Done', message: 'Saved.', type: 'success' })
+ *   showModal({ title: 'Delete?', message: 'Cannot undo.', type: 'danger',
+ *     actions: [
+ *       { label: 'Cancel', cls: 'cancel' },
+ *       { label: 'Delete', cls: 'danger', callback: () => doDelete() }
+ *     ]
+ *   })
+ */
+function showModal(opts) {
+    const type = opts.type || 'info';
+    const icons = { info: '\u2139', warning: '\u26A0', danger: '\u26A0', success: '\u2713' };
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+
+    const card = document.createElement('div');
+    card.className = 'modal-card';
+
+    // Icon
+    const icon = document.createElement('div');
+    icon.className = 'modal-icon modal-icon-' + type;
+    icon.textContent = icons[type] || '';
+    card.appendChild(icon);
+
+    // Title
+    if (opts.title) {
+        const title = document.createElement('div');
+        title.className = 'modal-title';
+        title.textContent = opts.title;
+        card.appendChild(title);
+    }
+
+    // Message
+    if (opts.message) {
+        const msg = document.createElement('div');
+        msg.className = 'modal-message';
+        msg.innerHTML = opts.message;
+        card.appendChild(msg);
+    }
+
+    // Actions
+    const actions = opts.actions || [{ label: 'OK', cls: 'primary' }];
+    const btnRow = document.createElement('div');
+    btnRow.className = 'modal-actions';
+    actions.forEach(a => {
+        const btn = document.createElement('button');
+        btn.className = 'modal-btn modal-btn-' + (a.cls || 'primary');
+        btn.textContent = a.label;
+        btn.addEventListener('click', () => {
+            overlay.remove();
+            if (a.callback) a.callback();
+        });
+        btnRow.appendChild(btn);
+    });
+    card.appendChild(btnRow);
+
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    // Close on overlay click
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.remove();
+    });
+
+    return overlay;
+}
+
 /**
  * Create a text/number input field.
  * @param {Object} options

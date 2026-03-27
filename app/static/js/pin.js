@@ -155,13 +155,14 @@ function authFetch(url, options) {
             options.headers = options.headers || {};
             options.headers['X-Operator-Pin'] = pin;
             fetch(url, options).then(r => {
-                if (r.status === 401 || r.status === 403) {
-                    // Clear session on auth failure
+                if (r.status === 401) {
+                    // Auth missing/invalid — re-prompt
                     sessionPin = null;
                     r.json().then(data => {
                         showNumpad(doFetchAndSave, data.error || 'Authentication required');
                     });
                 } else {
+                    // 403 (permission denied) and all other codes go to caller
                     resolve(r);
                 }
             });

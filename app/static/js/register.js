@@ -1133,11 +1133,22 @@ function openResults(entryId, prefetchedEntry) {
                 resultFooter.style.display = 'none';
                 rejectFooter.style.display = 'flex';
                 rejectFooter.innerHTML = '';
+                rejectFooter.style.flexDirection = 'column';
+                rejectFooter.style.alignItems = 'center';
+                rejectFooter.style.gap = '8px';
+
                 const validateBtn = document.createElement('button');
                 validateBtn.className = 'wiz-btn validate-btn';
                 validateBtn.textContent = 'Validate Results';
+                validateBtn.style.width = '100%';
                 validateBtn.addEventListener('click', () => executeValidate(entry.id));
                 rejectFooter.appendChild(validateBtn);
+
+                const rejectBtn = document.createElement('button');
+                rejectBtn.className = 'reject-pill';
+                rejectBtn.textContent = 'Reject sample';
+                rejectBtn.addEventListener('click', () => startRejectFlow());
+                rejectFooter.appendChild(rejectBtn);
 
                 // Fetch validation context
                 fetch(`/api/register/entries/${entry.id}/context`)
@@ -1512,9 +1523,11 @@ function confirmReject(reason) {
 }
 
 function executeReject(reason) {
-    authFetch(`/api/register/entries/${currentEntryId}/reject`, {
+    const pin = currentPin || sessionPin;
+    if (!pin) { showNumpad(p => { currentPin = p; executeReject(reason); }); return; }
+    fetch(`/api/register/entries/${currentEntryId}/reject`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Operator-Pin': pin },
         body: JSON.stringify({ reason: reason })
     }).then(r => {
         if (r.ok) {
@@ -1522,16 +1535,22 @@ function executeReject(reason) {
             showSuccess('REJECTED', 'var(--primary)');
             loadEntries();
         } else {
-            r.json().then(d => alert(d.error || 'Rejection failed'));
+            r.json().then(d => showModal({ title: 'Error', message: d.error || 'Rejection failed', type: 'danger' }));
         }
     });
 }
 
-function executeValidate(entryId) {
-    authFetch(`/api/register/entries/${entryId}/validate`, {
+function executeValidate(entryId, bypassFourEyes) {
+    const payload = bypassFourEyes ? { bypass_four_eyes: true } : {};
+    const pin = currentPin || sessionPin;
+    if (!pin) {
+        showNumpad(p => { currentPin = p; executeValidate(entryId, bypassFourEyes); });
+        return;
+    }
+    fetch(`/api/register/entries/${entryId}/validate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
+        headers: { 'Content-Type': 'application/json', 'X-Operator-Pin': pin },
+        body: JSON.stringify(payload)
     }).then(r => {
         if (r.ok) {
             closeResultModal();
@@ -1543,15 +1562,31 @@ function executeValidate(entryId) {
                 loadEntries();
             }
         } else {
-            r.json().then(d => alert(d.error || 'Validation failed'));
+            r.json().then(d => {
+                if (d.four_eyes) {
+                    showModal({
+                        title: 'Four-Eyes Rule',
+                        message: 'You are validating results you entered yourself.<br>This will be logged as a <b>non-conformity</b>.',
+                        type: 'warning',
+                        actions: [
+                            { label: 'Go back', cls: 'cancel' },
+                            { label: 'Override & validate', cls: 'danger', callback: () => executeValidate(entryId, true) }
+                        ]
+                    });
+                } else {
+                    showModal({ title: 'Error', message: d.error || 'Validation failed', type: 'danger' });
+                }
+            });
         }
     });
 }
 
 function executeUnreject(entryId) {
-    authFetch(`/api/register/entries/${entryId}/unreject`, {
+    const pin = currentPin || sessionPin;
+    if (!pin) { showNumpad(p => { currentPin = p; executeUnreject(entryId); }); return; }
+    fetch(`/api/register/entries/${entryId}/unreject`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Operator-Pin': pin },
         body: JSON.stringify({})
     }).then(r => {
         if (r.ok) {
@@ -1559,7 +1594,7 @@ function executeUnreject(entryId) {
             showSuccess('Restored');
             loadEntries();
         } else {
-            r.json().then(d => alert(d.error || 'Unreject failed'));
+            r.json().then(d => showModal({ title: 'Error', message: d.error || 'Unreject failed', type: 'danger' }));
         }
     });
 }
@@ -1641,7 +1676,7 @@ function submitPayload(payload) {
             showSuccess(getCurrentLang() === 'fr' ? 'Sauvegarde' : 'Saved');
             if (isRegisterMode) loadEntries();
         } else {
-            r.json().then(d => alert(d.error || 'Save failed'));
+            r.json().then(d => showModal({ title: 'Error', message: d.error || 'Save failed', type: 'danger' }));
         }
     });
 }
