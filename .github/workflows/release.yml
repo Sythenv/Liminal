@@ -56,6 +56,12 @@ jobs:
           mkdir runtime
           tar xzf python.tar.gz -C runtime --strip-components=1
 
+      - name: Configure runtime
+        shell: pwsh
+        run: |
+          # Remove ._pth file that forces isolated mode and blocks stdlib discovery
+          Remove-Item -Force runtime\python312._pth -ErrorAction SilentlyContinue
+
       - name: Install dependencies
         shell: pwsh
         run: |

@@ -9,6 +9,7 @@ echo.
 :: Use embedded runtime if available, otherwise system Python
 if exist "%~dp0runtime\python.exe" (
     set PYTHON=%~dp0runtime\python.exe
+    set PYTHONHOME=%~dp0runtime
     goto :ready
 )
 
