@@ -245,12 +245,422 @@ function handleSetupPin(pin) {
                 currentPin = pin;
                 currentLevel = 3;
                 currentOperatorName = name;
-                hideNumpad();
+                // Start onboarding wizard instead of hiding
+                startOnboardingWizard();
             } else {
                 showPinError(data.error || 'Setup failed');
             }
         });
     }
+}
+
+// ===== ONBOARDING WIZARD =====
+
+let onboardingStep = 3;
+let onboardingData = {
+    siteConfig: {},
+    activeTests: [],
+    createdOperators: []
+};
+
+function startOnboardingWizard() {
+    // Hide numpad, show wizard
+    document.getElementById('pinPad').style.display = 'none';
+    const wizard = document.getElementById('onboardingWizard');
+    wizard.style.display = 'block';
+    onboardingStep = 3;
+    showOnboardingStep3();
+}
+
+function renderStepHeader(wizard, step, title, subtitle) {
+    const totalSteps = 6;
+    wizard.innerHTML = '';
+
+    // Step indicator text
+    const indicator = document.createElement('div');
+    indicator.className = 'wiz-step-indicator';
+    indicator.textContent = 'Step ' + step + ' of ' + totalSteps;
+    wizard.appendChild(indicator);
+
+    // Step dots
+    const dots = document.createElement('div');
+    dots.className = 'wiz-step-dots';
+    for (let i = 1; i <= totalSteps; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'wiz-dot';
+        if (i < step) dot.classList.add('done');
+        if (i === step) dot.classList.add('active');
+        dots.appendChild(dot);
+    }
+    wizard.appendChild(dots);
+
+    // Title
+    const h = document.createElement('div');
+    h.className = 'wiz-title';
+    h.textContent = title;
+    wizard.appendChild(h);
+
+    // Subtitle
+    if (subtitle) {
+        const sub = document.createElement('div');
+        sub.className = 'wiz-subtitle';
+        sub.textContent = subtitle;
+        wizard.appendChild(sub);
+    }
+}
+
+// ----- Step 3: Site Configuration -----
+
+function showOnboardingStep3() {
+    const wizard = document.getElementById('onboardingWizard');
+    renderStepHeader(wizard, 3, 'Site Configuration', 'Configure your laboratory site');
+
+    const form = document.createElement('div');
+    form.className = 'wiz-form';
+
+    // Fetch current config
+    fetch('/api/config')
+        .then(r => r.json())
+        .then(config => {
+            // Site name
+            const nameInput = createInput({ id: 'wizSiteName', placeholder: 'Laboratory name', value: config.site_name || '' });
+            form.appendChild(createField('Site Name', nameInput));
+
+            // Site code
+            const codeInput = createInput({ id: 'wizSiteCode', placeholder: '3-5 characters', value: config.site_code || '' });
+            codeInput.maxLength = 5;
+            form.appendChild(createField('Site Code', codeInput));
+
+            // Country
+            const countryInput = createInput({ id: 'wizCountry', placeholder: 'Country', value: config.country || '' });
+            form.appendChild(createField('Country', countryInput));
+
+            // Language
+            const langGroup = createButtonGroup({
+                items: [
+                    { value: 'en', label: 'EN' },
+                    { value: 'fr', label: 'FR' },
+                    { value: 'ar', label: 'AR' }
+                ],
+                columns: 3
+            });
+            langGroup.setValue(config.default_language || 'en');
+            form.appendChild(createField('Default Language', langGroup.element));
+
+            wizard.appendChild(form);
+
+            // Actions
+            const actions = document.createElement('div');
+            actions.className = 'wiz-actions';
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'wiz-btn wiz-btn-next';
+            nextBtn.textContent = 'Next';
+            nextBtn.addEventListener('click', () => {
+                const siteName = nameInput.value.trim();
+                const siteCode = codeInput.value.trim().toUpperCase();
+                const country = countryInput.value.trim();
+                const lang = langGroup.getValue();
+
+                if (!siteName) { nameInput.focus(); return; }
+                if (siteCode.length < 3 || siteCode.length > 5) { codeInput.focus(); return; }
+                if (!country) { countryInput.focus(); return; }
+
+                // Save config
+                fetch('/api/config', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Operator-Pin': currentPin
+                    },
+                    body: JSON.stringify({
+                        site_name: siteName,
+                        site_code: siteCode,
+                        country: country,
+                        default_language: lang || 'en'
+                    })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.ok) {
+                        onboardingData.siteConfig = {
+                            site_name: siteName,
+                            site_code: siteCode,
+                            country: country,
+                            default_language: lang || 'en'
+                        };
+                        showOnboardingStep4();
+                    }
+                });
+            });
+            actions.appendChild(nextBtn);
+            wizard.appendChild(actions);
+        });
+}
+
+// ----- Step 4: Active Tests -----
+
+function showOnboardingStep4() {
+    const wizard = document.getElementById('onboardingWizard');
+    renderStepHeader(wizard, 4, 'Active Tests', 'Select the tests available at this site');
+
+    // Fetch all tests
+    fetch('/api/config/tests/all')
+        .then(r => r.json())
+        .then(tests => {
+            const grid = document.createElement('div');
+            grid.className = 'test-toggle-grid';
+
+            const toggles = [];
+            tests.forEach(t => {
+                const btn = document.createElement('div');
+                btn.className = 'test-toggle' + (t.is_active ? ' selected' : '');
+                btn.innerHTML = '<span class="test-code">' + t.code + '</span>';
+                btn.dataset.code = t.code;
+                btn.addEventListener('click', () => {
+                    btn.classList.toggle('selected');
+                });
+                grid.appendChild(btn);
+                toggles.push(btn);
+            });
+
+            wizard.appendChild(grid);
+
+            // Actions
+            const actions = document.createElement('div');
+            actions.className = 'wiz-actions';
+
+            const backBtn = document.createElement('button');
+            backBtn.className = 'wiz-btn wiz-btn-back';
+            backBtn.textContent = 'Back';
+            backBtn.addEventListener('click', showOnboardingStep3);
+            actions.appendChild(backBtn);
+
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'wiz-btn wiz-btn-next';
+            nextBtn.textContent = 'Next';
+            nextBtn.addEventListener('click', () => {
+                const activeCodes = toggles
+                    .filter(b => b.classList.contains('selected'))
+                    .map(b => b.dataset.code);
+
+                fetch('/api/config/tests', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Operator-Pin': currentPin
+                    },
+                    body: JSON.stringify({ active_tests: activeCodes })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.ok) {
+                        onboardingData.activeTests = activeCodes;
+                        showOnboardingStep5();
+                    }
+                });
+            });
+            actions.appendChild(nextBtn);
+            wizard.appendChild(actions);
+        });
+}
+
+// ----- Step 5: Create Operators -----
+
+function showOnboardingStep5() {
+    const wizard = document.getElementById('onboardingWizard');
+    renderStepHeader(wizard, 5, 'Create Operators', 'Add at least one supervisor and one technician');
+
+    const content = document.createElement('div');
+    content.className = 'wiz-form';
+
+    // Created operators list
+    const createdList = document.createElement('div');
+    createdList.className = 'created-operators';
+    createdList.id = 'createdOperatorsList';
+    content.appendChild(createdList);
+
+    // Render already-created operators
+    function renderCreatedList() {
+        createdList.innerHTML = '';
+        onboardingData.createdOperators.forEach(op => {
+            const row = document.createElement('div');
+            row.className = 'created-op';
+            row.innerHTML = '<span class="op-name">' + op.name + '</span>' +
+                '<span class="op-badge ' + (op.level === 2 ? 'sup' : 'tech') + '">' +
+                (op.level === 2 ? 'Supervisor' : 'Technician') + '</span>';
+            createdList.appendChild(row);
+        });
+    }
+    renderCreatedList();
+
+    // Operator form card
+    function createOperatorForm(level) {
+        const card = document.createElement('div');
+        card.className = 'operator-card';
+
+        const header = document.createElement('div');
+        header.className = 'op-header';
+        const title = document.createElement('div');
+        title.style.fontWeight = '700';
+        title.textContent = level === 2 ? 'Add Supervisor' : 'Add Technician';
+        header.appendChild(title);
+        const badge = document.createElement('span');
+        badge.className = 'op-level-badge level-' + level;
+        badge.textContent = 'Level ' + level;
+        header.appendChild(badge);
+        card.appendChild(header);
+
+        const nameInput = createInput({ placeholder: 'Operator name' });
+        card.appendChild(createField('Name', nameInput));
+
+        const pinInput = createInput({ placeholder: '4-8 digits', type: 'password' });
+        pinInput.inputMode = 'numeric';
+        pinInput.pattern = '[0-9]*';
+        pinInput.maxLength = 8;
+        card.appendChild(createField('PIN', pinInput));
+
+        const addBtn = document.createElement('button');
+        addBtn.className = 'wiz-btn wiz-btn-confirm';
+        addBtn.textContent = 'Add';
+        addBtn.style.width = '100%';
+        addBtn.addEventListener('click', () => {
+            const name = nameInput.value.trim();
+            const pin = pinInput.value.trim();
+            if (!name) { nameInput.focus(); return; }
+            if (pin.length < 4 || pin.length > 8 || !/^\d+$/.test(pin)) {
+                pinInput.focus();
+                return;
+            }
+
+            fetch('/api/auth/operators', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Operator-Pin': currentPin
+                },
+                body: JSON.stringify({ name: name, pin: pin, level: level })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.id) {
+                    onboardingData.createdOperators.push({ name: data.name, level: data.level });
+                    nameInput.value = '';
+                    pinInput.value = '';
+                    renderCreatedList();
+                    updateNextBtn();
+                }
+            });
+        });
+        card.appendChild(addBtn);
+
+        return card;
+    }
+
+    content.appendChild(createOperatorForm(2));
+    content.appendChild(createOperatorForm(1));
+
+    wizard.appendChild(content);
+
+    // Actions
+    const actions = document.createElement('div');
+    actions.className = 'wiz-actions';
+
+    const backBtn = document.createElement('button');
+    backBtn.className = 'wiz-btn wiz-btn-back';
+    backBtn.textContent = 'Back';
+    backBtn.addEventListener('click', showOnboardingStep4);
+    actions.appendChild(backBtn);
+
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'wiz-btn wiz-btn-next';
+    nextBtn.textContent = 'Next';
+    nextBtn.id = 'wizStep5Next';
+
+    function updateNextBtn() {
+        const hasSup = onboardingData.createdOperators.some(o => o.level === 2);
+        const hasTech = onboardingData.createdOperators.some(o => o.level === 1);
+        nextBtn.disabled = !(hasSup && hasTech);
+        nextBtn.style.opacity = (hasSup && hasTech) ? '1' : '0.4';
+    }
+    updateNextBtn();
+
+    nextBtn.addEventListener('click', () => {
+        if (nextBtn.disabled) return;
+        showOnboardingStep6();
+    });
+    actions.appendChild(nextBtn);
+
+    // Skip option
+    const skipBtn = document.createElement('button');
+    skipBtn.className = 'wiz-btn wiz-btn-cancel';
+    skipBtn.textContent = 'Skip';
+    skipBtn.style.fontSize = '13px';
+    skipBtn.style.minWidth = '60px';
+    skipBtn.style.maxWidth = '80px';
+    skipBtn.addEventListener('click', showOnboardingStep6);
+    actions.appendChild(skipBtn);
+
+    wizard.appendChild(actions);
+}
+
+// ----- Step 6: Complete -----
+
+function showOnboardingStep6() {
+    const wizard = document.getElementById('onboardingWizard');
+    renderStepHeader(wizard, 6, 'Setup Complete', 'Your laboratory is ready');
+
+    const recap = document.createElement('div');
+    recap.className = 'recap-section';
+
+    const siteName = onboardingData.siteConfig.site_name || 'Laboratory';
+    const testCount = onboardingData.activeTests.length || '—';
+    const opCount = onboardingData.createdOperators.length;
+
+    const rows = [
+        ['Site', siteName],
+        ['Site Code', onboardingData.siteConfig.site_code || '—'],
+        ['Country', onboardingData.siteConfig.country || '—'],
+        ['Active Tests', testCount],
+        ['Operators Created', opCount]
+    ];
+
+    rows.forEach(([label, value]) => {
+        const row = document.createElement('div');
+        row.className = 'recap-row';
+        row.innerHTML = '<span class="recap-label">' + label + '</span><span class="recap-value">' + value + '</span>';
+        recap.appendChild(row);
+    });
+    wizard.appendChild(recap);
+
+    // Operator list in recap
+    if (onboardingData.createdOperators.length > 0) {
+        const opList = document.createElement('div');
+        opList.className = 'created-operators';
+        onboardingData.createdOperators.forEach(op => {
+            const row = document.createElement('div');
+            row.className = 'created-op';
+            row.innerHTML = '<span class="op-name">' + op.name + '</span>' +
+                '<span class="op-badge ' + (op.level === 2 ? 'sup' : 'tech') + '">' +
+                (op.level === 2 ? 'Supervisor' : 'Technician') + '</span>';
+            opList.appendChild(row);
+        });
+        wizard.appendChild(opList);
+    }
+
+    // Start button
+    const actions = document.createElement('div');
+    actions.className = 'wiz-actions';
+    const startBtn = document.createElement('button');
+    startBtn.className = 'wiz-btn wiz-btn-start';
+    startBtn.textContent = 'Start using Liminal';
+    startBtn.addEventListener('click', () => {
+        wizard.style.display = 'none';
+        document.getElementById('pinPad').style.display = '';
+        hideNumpad();
+        window.location.href = '/register';
+    });
+    actions.appendChild(startBtn);
+    wizard.appendChild(actions);
 }
 
 // ===== DURESS MODE =====

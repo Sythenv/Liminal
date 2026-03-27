@@ -47,6 +47,10 @@ First release. Standalone kits Linux + Windows (Python embarqué, 0 dépendance)
 - Code 128 barcode generator (components.js, pure SVG)
 - Barcode on donor cards (scannable by USB HID scanner)
 - Demo PINs on numpad (chmod mnemonics: 0777/0755/0644)
+- **P0.1** Backup/Restore: create, list, download, restore with SQLite validation
+- **P0.2** Onboarding first-run wizard: site config, test selection, operator creation
+- Settings page with backup management UI
+- Config API: GET/PUT site config, GET/PUT active tests
 
 ### Fixed
 - bloodbank.js: all API calls use authFetch instead of raw fetch

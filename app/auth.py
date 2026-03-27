@@ -70,6 +70,16 @@ ROUTE_LEVELS = {
     ('POST', '/api/auth/operators'):                3,
     ('PUT',  '/api/auth/operators/*'):              3,
     ('DELETE', '/api/auth/operators/*'):             3,
+
+    # Backup — Level 3
+    ('POST', '/api/backup'):                        3,
+    ('GET',  '/api/backup'):                        3,
+    ('GET',  '/api/backup/*'):                      3,
+    ('POST', '/api/backup/restore'):                3,
+
+    # Config — Level 3
+    ('PUT',  '/api/config'):                        3,
+    ('PUT',  '/api/config/tests'):                  3,
 }
 
 # Paths that skip auth entirely (no PIN needed, no level check)
@@ -80,7 +90,7 @@ SKIP_AUTH = {
 
 # Prefixes that skip auth (HTML pages, static files)
 SKIP_PREFIXES = ('/static/', '/register', '/patients', '/reports',
-                 '/bloodbank', '/equipment', '/export')
+                 '/bloodbank', '/equipment', '/export', '/settings')
 
 
 def _match_route(method, path):

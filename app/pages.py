@@ -47,3 +47,10 @@ def equipment():
                            lang=current_app.config['DEFAULT_LANGUAGE'])
 
 
+@bp.route('/settings')
+def settings():
+    return render_template('settings.html',
+                           site_name=current_app.config['SITE_NAME'],
+                           lang=current_app.config['DEFAULT_LANGUAGE'])
+
+

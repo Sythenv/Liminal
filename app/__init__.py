@@ -43,11 +43,13 @@ def create_app(config_path=None):
     from .api.export import bp as export_bp
     from .api.config_api import bp as config_bp
     from .api.reports import bp as reports_bp
+    from .api.backup import bp as backup_bp
     app.register_blueprint(register_bp, url_prefix='/api/register')
     app.register_blueprint(patients_bp, url_prefix='/api/patients')
     app.register_blueprint(export_bp, url_prefix='/api/export')
     app.register_blueprint(config_bp, url_prefix='/api/config')
     app.register_blueprint(reports_bp, url_prefix='/api/reports')
+    app.register_blueprint(backup_bp, url_prefix='/api/backup')
 
     from .api.bloodbank import bp as bloodbank_bp
     from .api.equipment import bp as equipment_bp
@@ -80,7 +82,7 @@ def create_app(config_path=None):
         return response
 
     # Input validation: reject oversized payloads
-    app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024  # 1MB max
+    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max (backup restore)
 
     # Bind safety: force localhost only
     @app.before_request

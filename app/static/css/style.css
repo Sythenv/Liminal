@@ -1846,6 +1846,181 @@ h2 { color: var(--primary); margin: 20px 0 16px; font-size: 20px; }
 }
 .shake { animation: shake 0.4s ease; }
 
+/* ===== ONBOARDING WIZARD ===== */
+.onboarding-wizard {
+    width: 400px;
+    max-width: 90vw;
+    text-align: center;
+}
+.onboarding-wizard .wiz-step-indicator {
+    font-size: 12px;
+    color: #999;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+.onboarding-wizard .wiz-step-dots {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+.onboarding-wizard .wiz-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: all 0.2s;
+}
+.onboarding-wizard .wiz-dot.active {
+    background: var(--primary);
+    transform: scale(1.3);
+}
+.onboarding-wizard .wiz-dot.done {
+    background: var(--green);
+}
+.onboarding-wizard .wiz-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--primary);
+}
+.onboarding-wizard .wiz-subtitle {
+    font-size: 13px;
+    color: var(--gray);
+    margin-bottom: 24px;
+}
+.onboarding-wizard .wiz-form {
+    text-align: left;
+}
+.onboarding-wizard .wiz-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    justify-content: center;
+}
+.onboarding-wizard .wiz-actions .wiz-btn {
+    flex: 1;
+    max-width: 180px;
+}
+.onboarding-wizard .test-toggle-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    text-align: left;
+    max-height: 340px;
+    overflow-y: auto;
+}
+.onboarding-wizard .test-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    background: var(--white);
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.15s;
+    user-select: none;
+}
+.onboarding-wizard .test-toggle.selected {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: var(--white);
+}
+.onboarding-wizard .test-toggle .test-code {
+    font-family: 'SF Mono', Consolas, monospace;
+    font-weight: 700;
+}
+.onboarding-wizard .operator-card {
+    background: var(--white);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 12px;
+    text-align: left;
+}
+.onboarding-wizard .operator-card .op-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.onboarding-wizard .operator-card .op-level-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: var(--primary);
+    color: var(--white);
+    text-transform: uppercase;
+}
+.onboarding-wizard .operator-card .op-level-badge.level-1 {
+    background: var(--blue);
+}
+.onboarding-wizard .operator-card .op-level-badge.level-2 {
+    background: var(--green);
+}
+.onboarding-wizard .created-operators {
+    margin-bottom: 16px;
+}
+.onboarding-wizard .created-op {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+.onboarding-wizard .created-op .op-name {
+    font-weight: 700;
+}
+.onboarding-wizard .created-op .op-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 12px;
+    color: var(--white);
+}
+.onboarding-wizard .created-op .op-badge.sup { background: var(--green); }
+.onboarding-wizard .created-op .op-badge.tech { background: var(--blue); }
+.onboarding-wizard .recap-section {
+    text-align: left;
+    margin-bottom: 16px;
+}
+.onboarding-wizard .recap-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 15px;
+}
+.onboarding-wizard .recap-row:last-child { border-bottom: none; }
+.onboarding-wizard .recap-label {
+    color: var(--gray);
+    font-weight: 600;
+}
+.onboarding-wizard .recap-value {
+    font-weight: 700;
+}
+.onboarding-wizard .wiz-btn-start {
+    background: var(--green);
+    color: var(--white);
+    font-size: 18px;
+    padding: 16px 32px;
+    width: 100%;
+    max-width: 100%;
+}
+.onboarding-wizard .wiz-btn-start:hover {
+    background: var(--green-dark);
+}
+
 /* ===== PRINT ===== */
 @media print {
     .app-header, .fab, .day-header { display: none; }

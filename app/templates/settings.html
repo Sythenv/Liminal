@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 data-i18n="nav_settings">Settings</h2>
+
+<!-- Backup Section -->
+<div class="sample-card" style="margin-bottom:1.5rem">
+    <h3 data-i18n="backup_title">Backup</h3>
+    <button id="btnBackupNow" class="wiz-btn" data-i18n="backup_now">Backup Now</button>
+    <div id="backupResult" style="display:none; margin-top:0.5rem" class="export-result">
+        <span id="backupMsg"></span>
+        <a id="backupDownloadLink" href="#" class="wiz-btn" data-i18n="download" style="margin-left:0.5rem">Download</a>
+    </div>
+
+    <h4 style="margin-top:1rem" data-i18n="backup_list_title">Existing Backups</h4>
+    <div id="backupList"><em data-i18n="loading">Loading...</em></div>
+</div>
+
+<!-- Restore Section -->
+<div class="sample-card">
+    <h3 data-i18n="restore_title">Restore</h3>
+    <p style="color:var(--danger,#c00); font-size:0.9rem" data-i18n="restore_warning">Warning: restoring will replace all current data.</p>
+    <input type="file" id="restoreFile" accept=".db" class="big-input" style="margin:0.5rem 0">
+    <button id="btnRestore" class="wiz-btn" data-i18n="restore_btn">Restore</button>
+    <div id="restoreResult" style="display:none; margin-top:0.5rem"></div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/settings.js"></script>
+{% endblock %}

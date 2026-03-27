@@ -320,6 +320,26 @@ class TestEquipmentAPI:
         assert resp.status_code == 400
 
 
+class TestBackupAPI:
+
+    def test_create_backup(self, client):
+        resp = client.post('/api/backup')
+        assert resp.status_code == 201
+        assert 'filename' in resp.get_json()
+
+    def test_list_backups(self, client):
+        client.post('/api/backup')
+        resp = client.get('/api/backup')
+        assert resp.status_code == 200
+        assert len(resp.get_json()['backups']) >= 1
+
+    def test_restore_invalid_file(self, client):
+        from io import BytesIO
+        data = {'file': (BytesIO(b'not a database'), 'bad.db')}
+        resp = client.post('/api/backup/restore', content_type='multipart/form-data', data=data)
+        assert resp.status_code == 400
+
+
 class TestExportAPI:
 
     def test_export_excel(self, client, sample_entry):
