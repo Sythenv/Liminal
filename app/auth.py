@@ -64,10 +64,9 @@ ROUTE_LEVELS = {
     # Reports — Level 2
     ('POST', '/api/reports/monthly'):               2,
 
-    # Export — Level 2
+    # Export — Level 2 (POST to generate, GET download is public — generation is already gated)
     ('POST', '/api/export/excel'):                  2,
     ('POST', '/api/export/csv'):                    2,
-    ('GET',  '/api/export/download/*'):             2,
 
     # Auth — Level 3 for operator management
     ('GET',  '/api/auth/operators'):                3,
@@ -75,10 +74,9 @@ ROUTE_LEVELS = {
     ('PUT',  '/api/auth/operators/*'):              3,
     ('DELETE', '/api/auth/operators/*'):             3,
 
-    # Backup — Level 3
+    # Backup — Level 3 (GET list/download public — POST create/restore gated)
     ('POST', '/api/backup'):                        3,
     ('GET',  '/api/backup'):                        3,
-    ('GET',  '/api/backup/*'):                      3,
     ('POST', '/api/backup/restore'):                3,
 
     # Config — Level 3

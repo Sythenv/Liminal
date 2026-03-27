@@ -59,14 +59,24 @@ function createBackup() {
 function restoreBackup() {
     var fileInput = document.getElementById('restoreFile');
     if (!fileInput.files || fileInput.files.length === 0) {
-        alert('Please select a .db file first.');
+        showModal({ title: 'Error', message: 'Please select a .db file first.', type: 'warning' });
         return;
     }
-    if (!confirm('This will replace all current data. Continue?')) {
-        return;
-    }
+
+    showModal({
+        title: 'Restore database?',
+        message: 'This will <b>replace all current data</b> with the backup file. This cannot be undone.',
+        type: 'danger',
+        actions: [
+            { label: 'Cancel', cls: 'cancel' },
+            { label: 'Restore', cls: 'danger', callback: function() { doRestore(fileInput.files[0]); } }
+        ]
+    });
+}
+
+function doRestore(file) {
     var formData = new FormData();
-    formData.append('file', fileInput.files[0]);
+    formData.append('file', file);
 
     authFetch('/api/backup/restore', {
         method: 'POST',
@@ -76,9 +86,9 @@ function restoreBackup() {
         var resultDiv = document.getElementById('restoreResult');
         resp.json().then(function (data) {
             if (data.ok) {
-                resultDiv.innerHTML = '<span style="color:green">' + data.message + '</span>';
+                resultDiv.innerHTML = '<span style="color:var(--sig-ok)">' + data.message + '</span>';
             } else {
-                resultDiv.innerHTML = '<span style="color:red">' + (data.error || 'Restore failed') + '</span>';
+                resultDiv.innerHTML = '<span style="color:var(--sig-alert)">' + (data.error || 'Restore failed') + '</span>';
             }
             resultDiv.style.display = 'block';
         });
