@@ -36,7 +36,9 @@ First release. Standalone kits Linux + Windows (Python embarqué, 0 dépendance)
 
 ---
 
-## [Unreleased] — Sprint 1
+## [v0.3.0-alpha] — 2026-03-27
+
+### Sprint 1 features + v0.2 refactor + bugfix cycle
 
 ### Added
 - **P3.1** Screening POS auto-discards blood unit (create + update)

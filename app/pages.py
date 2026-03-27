@@ -47,6 +47,20 @@ def equipment():
                            lang=current_app.config['DEFAULT_LANGUAGE'])
 
 
+@bp.route('/playbook')
+def playbook():
+    import os
+    root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+    return open(os.path.join(root, 'playbook.html')).read()
+
+
+@bp.route('/playbook2')
+def playbook2():
+    import os
+    root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+    return open(os.path.join(root, 'playbook2.html')).read()
+
+
 @bp.route('/settings')
 def settings():
     return render_template('settings.html',

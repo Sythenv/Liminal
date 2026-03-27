@@ -265,9 +265,16 @@ const TESTS = [
 ];
 
 // ===== STATE =====
-let current = 0;
-let results = TESTS.map(() => ({ status: null, comment: '' }));
-let started = false;
+const STORAGE_KEY = 'liminal_playbook';
+let saved = null;
+try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch(e) {}
+let current = (saved && saved.current) || 0;
+let results = (saved && saved.results) || TESTS.map(() => ({ status: null, comment: '' }));
+let started = (saved && saved.started) || false;
+
+function save() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ current, results, started }));
+}
 
 function render() {
     const app = document.getElementById('app');
@@ -285,7 +292,7 @@ function renderIntro(app) {
     const btn = document.createElement('button');
     btn.className = 'btn-start';
     btn.textContent = 'Commencer';
-    btn.addEventListener('click', () => { started = true; render(); });
+    btn.addEventListener('click', () => { started = true; save(); render(); });
     div.appendChild(btn);
     app.appendChild(div);
 }
@@ -356,7 +363,7 @@ function renderTest(app) {
     comment.className = 'comment-field';
     comment.placeholder = 'Remarque (optionnel)...';
     comment.value = results[current].comment;
-    comment.addEventListener('input', () => { results[current].comment = comment.value; });
+    comment.addEventListener('input', () => { results[current].comment = comment.value; save(); });
     card.appendChild(comment);
 
     // Actions
@@ -365,11 +372,11 @@ function renderTest(app) {
     const failBtn = document.createElement('button');
     failBtn.className = 'btn btn-fail';
     failBtn.textContent = 'Non \u2717';
-    failBtn.addEventListener('click', () => { results[current].status = false; current++; render(); });
+    failBtn.addEventListener('click', () => { results[current].status = false; current++; save(); render(); });
     const passBtn = document.createElement('button');
     passBtn.className = 'btn btn-pass';
     passBtn.textContent = 'Oui \u2713';
-    passBtn.addEventListener('click', () => { results[current].status = true; current++; render(); });
+    passBtn.addEventListener('click', () => { results[current].status = true; current++; save(); render(); });
     actions.appendChild(failBtn);
     actions.appendChild(passBtn);
     card.appendChild(actions);
@@ -469,7 +476,9 @@ function renderSummary(app) {
     restart.textContent = 'Recommencer';
     restart.addEventListener('click', () => {
         current = 0;
+        started = true;
         results = TESTS.map(() => ({ status: null, comment: '' }));
+        save();
         render();
     });
     card.appendChild(restart);

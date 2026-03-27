@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Liminal — Playbook retest (fails only)</title>
+<style>
+:root { --bg: #f7f6f3; --surface: #fff; --text: #1a1a1a; --muted: #888; --border: #d0cec9; --pass: #2e7d32; --pass-bg: #e8f5e9; --fail: #c62828; --fail-bg: #ffebee; --accent: #1a1a1a; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 24px 16px; }
+.container { max-width: 520px; width: 100%; }
+.progress { height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 8px; overflow: hidden; }
+.progress-bar { height: 100%; background: var(--accent); transition: width 0.3s; border-radius: 2px; }
+.counter { font-size: 12px; color: var(--muted); text-align: center; margin-bottom: 24px; }
+.card { background: var(--surface); border-radius: 16px; padding: 28px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.chapter { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 8px; }
+.title { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
+.instruction { font-size: 15px; line-height: 1.6; color: var(--text); margin-bottom: 16px; padding: 16px; background: var(--bg); border-radius: 10px; }
+.instruction ol { padding-left: 20px; }
+.instruction li { margin-bottom: 6px; }
+.instruction code { background: #e8e6e1; padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: 'SF Mono', Consolas, monospace; }
+.go-link { display: inline-block; margin-bottom: 16px; font-size: 13px; color: var(--accent); text-decoration: none; padding: 6px 14px; border: 1px solid var(--border); border-radius: 50px; transition: background 0.15s; }
+.go-link:hover { background: var(--bg); }
+.expected { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 16px; padding: 12px 16px; border-left: 3px solid var(--accent); background: var(--bg); border-radius: 0 8px 8px 0; }
+.prev-comment { font-size: 13px; color: var(--fail); margin-bottom: 16px; padding: 10px 14px; background: var(--fail-bg); border-radius: 8px; font-style: italic; }
+.comment-field { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; font-family: inherit; resize: vertical; min-height: 44px; margin-bottom: 16px; }
+.comment-field:focus { outline: none; border-color: var(--accent); }
+.comment-field::placeholder { color: #bbb; }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.btn { padding: 14px; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
+.btn:hover { opacity: 0.85; }
+.btn-pass { background: var(--pass); color: #fff; }
+.btn-fail { background: var(--fail); color: #fff; }
+.btn-back { border: none; background: none; color: var(--muted); font-size: 13px; cursor: pointer; margin-top: 12px; }
+.summary-stats { font-size: 18px; font-weight: 700; text-align: center; margin: 16px 0; }
+.stat-pass { color: var(--pass); }
+.stat-fail { color: var(--fail); }
+.fail-item { padding: 12px; margin-bottom: 8px; background: var(--fail-bg); border-radius: 10px; font-size: 14px; }
+.fail-item b { display: block; margin-bottom: 4px; }
+.fail-comment { font-style: italic; color: var(--fail); margin-top: 4px; font-size: 13px; }
+.pass-item { padding: 8px 12px; margin-bottom: 4px; background: var(--pass-bg); border-radius: 8px; font-size: 13px; color: var(--pass); }
+.export-btn { width: 100%; margin-top: 16px; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); font-size: 14px; font-weight: 600; cursor: pointer; }
+.export-btn:hover { background: var(--bg); }
+.intro { text-align: center; padding: 20px 0; }
+.intro h1 { font-size: 24px; margin-bottom: 8px; }
+.intro p { color: var(--muted); font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
+.btn-start { padding: 16px 48px; border: none; border-radius: 12px; background: var(--accent); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="container" id="app"></div>
+
+<script>
+const TESTS = [
+    { ch: '3. Enregistrement', title: 'Champ vide',
+      prevComment: 'Si ça passe de ouf.',
+      steps: ['Ouvre le wizard (bouton +).', 'Laisse le nom patient vide.', 'Essaie de passer à l\'étape suivante ou de Register.'],
+      expect: 'Le wizard BLOQUE : modal d\'erreur "Patient name is required". Impossible de soumettre.' },
+
+    { ch: '6. Validation', title: 'Annuler un rejet',
+      prevComment: 'Pas vraiment ça c\'est toujours dans rejected.',
+      steps: ['Crée un échantillon → saisis des résultats → rejette-le.', 'Ouvre l\'entrée REJECTED.', 'Clique "Undo Rejection" → PIN superviseur <code>0755</code>.'],
+      expect: 'L\'entrée revient en REGISTERED. Elle disparaît de "Rejected".' },
+
+    { ch: '8. Équipements', title: 'Créer un équipement',
+      prevComment: 'Add equipement ne fonctionne pas.',
+      steps: ['Va sur /equipment.', 'Clique <code>+</code>.', 'Remplis : Nom "Microscope", Catégorie, Condition Good.', 'PIN admin <code>0777</code>.'],
+      expect: 'Équipement créé. La card apparaît.', go: '/equipment' },
+
+    { ch: '8. Équipements', title: 'Log maintenance',
+      prevComment: 'Test impossible (dépendait du bug précédent).',
+      steps: ['Clique sur la card équipement.', 'Clique "Add Maintenance".', 'Type PREVENTIVE, description, PIN technicien <code>0644</code>.'],
+      expect: 'Le log maintenance apparaît sous la card.' },
+
+    { ch: '9. Rapports', title: 'Rapport mensuel',
+      prevComment: '{"error":"Authentication required","required_level":2} malgré pin 0755 OK.',
+      steps: ['Va sur /reports.', 'Sélectionne mois/année.', 'Clique "Generate" → PIN superviseur <code>0755</code>.'],
+      expect: 'PDF généré. Lien de téléchargement. PAS d\'erreur auth.', go: '/reports' },
+
+    { ch: '9. Rapports', title: 'Export Excel',
+      prevComment: '/export ko pas de bouton pour générer ni de fonctionnement.',
+      steps: ['Va sur /export.', 'Sélectionne les dates.', 'Clique "Export Excel" → PIN superviseur <code>0755</code>.'],
+      expect: 'Fichier .xlsx téléchargé.', go: '/export' },
+
+    { ch: '9. Rapports', title: 'Export CSV',
+      prevComment: 'Idem.',
+      steps: ['Même chose avec "Export CSV".'],
+      expect: 'Fichier .csv téléchargé.' },
+
+    { ch: '10. Backup', title: 'Restore invalide',
+      prevComment: 'Il faut auth lvl 3 mais n\'a pas enregistré mon pin.',
+      steps: ['Va sur /settings.', 'PIN admin <code>0777</code> si demandé.', 'Dans Restore, uploade un fichier texte (pas un .db).'],
+      expect: 'Message d\'erreur. La base n\'est PAS remplacée.', go: '/settings' },
+
+    { ch: '11. Sécurité', title: 'Niveau insuffisant',
+      prevComment: 'J\'ai pas le bon pin, test non concluant.',
+      steps: ['Crée un échantillon avec PIN technicien <code>0644</code>.', 'Saisis des résultats.', 'Tente de valider avec le même PIN <code>0644</code>.'],
+      expect: 'Erreur de niveau affichée ("Level 2 required"). PAS de boucle numpad.' },
+
+    { ch: '11. Sécurité', title: 'Accès donneur interdit',
+      prevComment: 'J\'ai pas le bon pin, test non concluant.',
+      steps: ['Va sur /bloodbank.', 'Déverrouille la nav avec PIN superviseur <code>0755</code>.', 'L\'onglet Donors charge.'],
+      expect: 'La liste des donneurs ne charge PAS (Level 3 requis). Message d\'erreur ou liste vide.', go: '/bloodbank' },
+
+    { ch: '11. Sécurité', title: 'Audit trail',
+      prevComment: 'Test non concluant.',
+      steps: ['Ouvre une entrée COMPLETED (clique dessus depuis le registre).', 'Cherche l\'historique des actions dans la modal.'],
+      expect: 'Les actions sont listées : CREATE, RESULT, VALIDATE — avec nom opérateur et date.' },
+];
+
+const STORAGE_KEY = 'liminal_playbook2';
+let saved = null;
+try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch(e) {}
+let current = (saved && saved.current) || 0;
+let results = (saved && saved.results) || TESTS.map(() => ({ status: null, comment: '' }));
+let started = (saved && saved.started) || false;
+
+function save() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ current, results, started }));
+}
+
+function render() {
+    const app = document.getElementById('app');
+    if (!started) { renderIntro(app); return; }
+    if (current >= TESTS.length) { renderSummary(app); return; }
+    renderTest(app);
+}
+
+function renderIntro(app) {
+    app.innerHTML = '';
+    const div = document.createElement('div');
+    div.className = 'intro';
+    div.innerHTML = '<h1>Retest — 11 fails</h1><p>Rejoue uniquement les ' + TESTS.length + ' tests qui ont échoué.<br>Les commentaires précédents sont affichés pour contexte.</p>';
+    const btn = document.createElement('button');
+    btn.className = 'btn-start';
+    btn.textContent = 'Commencer';
+    btn.addEventListener('click', () => { started = true; save(); render(); });
+    div.appendChild(btn);
+    app.appendChild(div);
+}
+
+function renderTest(app) {
+    const t = TESTS[current];
+    const pct = ((current + 1) / TESTS.length * 100).toFixed(0);
+    app.innerHTML = '';
+
+    const prog = document.createElement('div'); prog.className = 'progress';
+    const bar = document.createElement('div'); bar.className = 'progress-bar'; bar.style.width = pct + '%';
+    prog.appendChild(bar); app.appendChild(prog);
+
+    const counter = document.createElement('div'); counter.className = 'counter';
+    counter.textContent = 'Retest ' + (current + 1) + ' / ' + TESTS.length + ' — ' + t.ch;
+    app.appendChild(counter);
+
+    const card = document.createElement('div'); card.className = 'card';
+
+    const chapter = document.createElement('div'); chapter.className = 'chapter'; chapter.textContent = t.ch;
+    card.appendChild(chapter);
+    const title = document.createElement('div'); title.className = 'title'; title.textContent = t.title;
+    card.appendChild(title);
+
+    if (t.prevComment) {
+        const prev = document.createElement('div'); prev.className = 'prev-comment';
+        prev.textContent = 'Commentaire précédent : « ' + t.prevComment + ' »';
+        card.appendChild(prev);
+    }
+
+    const instr = document.createElement('div'); instr.className = 'instruction';
+    const ol = document.createElement('ol');
+    t.steps.forEach(s => { const li = document.createElement('li'); li.innerHTML = s; ol.appendChild(li); });
+    instr.appendChild(ol); card.appendChild(instr);
+
+    if (t.go) {
+        const link = document.createElement('a'); link.className = 'go-link'; link.href = t.go; link.target = '_blank';
+        link.textContent = 'Ouvrir ' + t.go + ' \u2197'; card.appendChild(link);
+    }
+
+    const exp = document.createElement('div'); exp.className = 'expected'; exp.textContent = t.expect;
+    card.appendChild(exp);
+
+    const comment = document.createElement('textarea'); comment.className = 'comment-field';
+    comment.placeholder = 'Remarque...'; comment.value = results[current].comment;
+    comment.addEventListener('input', () => { results[current].comment = comment.value; save(); });
+    card.appendChild(comment);
+
+    const actions = document.createElement('div'); actions.className = 'actions';
+    const failBtn = document.createElement('button'); failBtn.className = 'btn btn-fail'; failBtn.textContent = 'Encore KO \u2717';
+    failBtn.addEventListener('click', () => { results[current].status = false; current++; save(); render(); });
+    const passBtn = document.createElement('button'); passBtn.className = 'btn btn-pass'; passBtn.textContent = 'Fix\u00e9 \u2713';
+    passBtn.addEventListener('click', () => { results[current].status = true; current++; save(); render(); });
+    actions.appendChild(failBtn); actions.appendChild(passBtn); card.appendChild(actions);
+
+    if (current > 0) {
+        const back = document.createElement('button'); back.className = 'btn-back'; back.textContent = '\u2190 Pr\u00e9c\u00e9dent';
+        back.addEventListener('click', () => { current--; render(); }); card.appendChild(back);
+    }
+    app.appendChild(card);
+}
+
+function renderSummary(app) {
+    app.innerHTML = '';
+    const card = document.createElement('div'); card.className = 'card';
+    const title = document.createElement('div'); title.className = 'title'; title.textContent = 'Retest terminé';
+    card.appendChild(title);
+
+    let passed = 0, failed = 0; const failures = [];
+    results.forEach((r, i) => { if (r.status === true) passed++; else if (r.status === false) { failed++; failures.push(i); } });
+
+    const stats = document.createElement('div'); stats.className = 'summary-stats';
+    stats.innerHTML = '<span class="stat-pass">' + passed + ' fix\u00e9s</span> \u00b7 <span class="stat-fail">' + failed + ' encore KO</span>';
+    card.appendChild(stats);
+
+    if (failures.length > 0) {
+        failures.forEach(i => {
+            const item = document.createElement('div'); item.className = 'fail-item';
+            item.innerHTML = '<b>' + TESTS[i].ch + ' \u2014 ' + TESTS[i].title + '</b>' + TESTS[i].expect;
+            if (results[i].comment) { const c = document.createElement('div'); c.className = 'fail-comment'; c.textContent = '\u00ab ' + results[i].comment + ' \u00bb'; item.appendChild(c); }
+            card.appendChild(item);
+        });
+    }
+
+    results.forEach((r, i) => {
+        if (r.status !== true) return;
+        const item = document.createElement('div'); item.className = 'pass-item';
+        item.textContent = '\u2713 ' + TESTS[i].ch + ' \u2014 ' + TESTS[i].title;
+        card.appendChild(item);
+    });
+
+    const exportBtn = document.createElement('button'); exportBtn.className = 'export-btn'; exportBtn.textContent = 'Copier le rapport';
+    exportBtn.addEventListener('click', () => {
+        let text = 'LIMINAL RETEST REPORT\n' + new Date().toISOString() + '\n' + passed + ' fixed, ' + failed + ' still failing\n\n';
+        results.forEach((r, i) => { text += '[' + (r.status ? 'FIXED' : 'STILL_KO') + '] ' + TESTS[i].ch + ' - ' + TESTS[i].title + '\n'; if (r.comment) text += '       Note: ' + r.comment + '\n'; });
+        navigator.clipboard.writeText(text).then(() => { exportBtn.textContent = 'Copi\u00e9 !'; });
+    });
+    card.appendChild(exportBtn);
+
+    const restart = document.createElement('button'); restart.className = 'export-btn'; restart.textContent = 'Recommencer';
+    restart.addEventListener('click', () => { current = 0; started = true; results = TESTS.map(() => ({ status: null, comment: '' })); save(); render(); });
+    card.appendChild(restart);
+
+    app.appendChild(card);
+}
+
+render();
+</script>
+</body>
+</html>
