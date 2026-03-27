@@ -176,19 +176,20 @@ function authFetch(url, options) {
                 body: JSON.stringify({ pin: pin })
             }).then(r => r.json()).then(data => {
                 if (data.id) {
+                    currentPin = pin;
+                    currentLevel = data.level;
+                    currentOperatorName = data.name;
                     setSession(pin, data.level);
                 }
             });
             doFetch(pin);
         };
 
-        // Read: use cached session if valid
-        if (!isWrite) {
-            const cached = getSessionPin();
-            if (cached) { doFetch(cached); return; }
-        }
+        // Try cached PIN first (both reads and writes)
+        const cached = currentPin || getSessionPin();
+        if (cached) { doFetch(cached); return; }
 
-        // Write or no session: prompt PIN
+        // No PIN available: prompt
         showNumpad(doFetchAndSave);
     });
 }

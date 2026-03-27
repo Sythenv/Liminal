@@ -292,57 +292,41 @@ function loadUnits() {
                                ISSUED: 'status-registered', EXPIRED: 'status-rejected' };
 
         units.forEach(u => {
-            const card = document.createElement('div');
-            card.className = 'sample-card ' + (statusColors[u.status] || '');
-
-            const top = document.createElement('div');
-            top.className = 'card-top';
-            const num = document.createElement('span');
-            num.className = 'card-lab-number';
-            num.textContent = u.unit_number;
-            const st = document.createElement('span');
-            st.className = 'card-status ' + u.status.toLowerCase();
-            st.textContent = u.status;
-            top.appendChild(num);
-            top.appendChild(st);
-            card.appendChild(top);
-
-            const bg = document.createElement('div');
-            bg.className = 'card-patient';
-            bg.textContent = u.blood_group;
-            card.appendChild(bg);
-
-            const det = document.createElement('div');
-            det.className = 'card-details';
             const parts = [u.volume_ml + 'ml'];
             if (u.donor_name) parts.push('Donor: ' + u.donor_number || u.donor_name);
             parts.push('Exp: ' + u.expiry_date);
-            det.textContent = parts.join(' \u00b7 ');
-            card.appendChild(det);
+
+            // Build extra elements
+            const extra = [];
 
             // Expiry warning on its own line
             const today = new Date().toISOString().split('T')[0];
             const daysLeft = Math.ceil((new Date(u.expiry_date) - new Date(today)) / 86400000);
             if (u.status === 'AVAILABLE' && daysLeft <= 7 && daysLeft > 0) {
                 const warn = document.createElement('div');
-                warn.className = 'rejection-badge';
-                warn.style.marginTop = '6px';
+                warn.className = 'rejection-badge u-mt-6';
                 warn.textContent = daysLeft + 'd left';
-                card.appendChild(warn);
+                extra.push(warn);
             }
 
             // Screening badges
-            const tests = document.createElement('div');
-            tests.className = 'card-tests';
+            const badges = [];
             ['hiv', 'hbv', 'hcv', 'syphilis'].forEach(s => {
                 const val = u['screening_' + s];
                 if (!val) return;
-                const badge = document.createElement('span');
-                badge.className = 'card-test-badge ' + (val === 'POS' ? 'result-positive' : 'has-result');
-                badge.textContent = s.toUpperCase() + ': ' + val;
-                tests.appendChild(badge);
+                badges.push({ text: s.toUpperCase() + ': ' + val, cls: val === 'POS' ? 'result-positive' : 'has-result' });
             });
-            card.appendChild(tests);
+
+            const card = createCard({
+                id: u.unit_number,
+                status: u.status,
+                statusClass: u.status.toLowerCase(),
+                title: u.blood_group,
+                subtitle: parts.join(' \u00b7 '),
+                badges: badges,
+                borderClass: statusColors[u.status] || '',
+                extra: extra
+            });
 
             list.appendChild(card);
         });
@@ -515,47 +499,30 @@ function loadTransfusions() {
         empty.style.display = 'none';
 
         trs.forEach(tr => {
-            const card = document.createElement('div');
             const completed = tr.transfusion_completed;
-            card.className = 'sample-card ' + (completed ? 'status-completed' : 'status-in_progress');
-
-            const top = document.createElement('div');
-            top.className = 'card-top';
-            const num = document.createElement('span');
-            num.className = 'card-lab-number';
-            num.textContent = tr.unit_number;
-            const st = document.createElement('span');
-            st.className = 'card-status ' + (completed ? 'completed' : 'in_progress');
-            st.textContent = completed ? 'completed' : 'issued';
-            top.appendChild(num);
-            top.appendChild(st);
-            card.appendChild(top);
-
-            const name = document.createElement('div');
-            name.className = 'card-patient';
-            name.textContent = tr.patient_name;
-            card.appendChild(name);
-
-            const det = document.createElement('div');
-            det.className = 'card-details';
             const parts = [tr.unit_blood_group];
             if (tr.issued_to_ward) parts.push(tr.issued_to_ward);
             if (tr.issued_date) parts.push(tr.issued_date);
             if (tr.crossmatch_result) parts.push('XM: ' + tr.crossmatch_result);
-            det.textContent = parts.join(' \u00b7 ');
-            card.appendChild(det);
 
+            const extra = [];
             if (tr.adverse_reaction) {
                 const badge = document.createElement('span');
                 badge.className = 'rejection-badge';
                 badge.textContent = 'ADVERSE REACTION';
-                card.appendChild(badge);
+                extra.push(badge);
             }
 
-            // Complete button for issued (not yet completed)
-            if (!completed) {
-                card.addEventListener('click', () => openCompleteTr(tr));
-            }
+            const card = createCard({
+                id: tr.unit_number,
+                status: completed ? 'completed' : 'issued',
+                statusClass: completed ? 'completed' : 'in_progress',
+                title: tr.patient_name,
+                subtitle: parts.join(' \u00b7 '),
+                borderClass: completed ? 'status-completed' : 'status-in_progress',
+                onClick: !completed ? () => openCompleteTr(tr) : null,
+                extra: extra
+            });
 
             list.appendChild(card);
         });
@@ -591,8 +558,7 @@ function openIssueUnit() {
             btn.type = 'button';
             btn.className = 'ward-btn';
             btn.textContent = u.unit_number + ' ' + u.blood_group + ' (' + u.volume_ml + 'ml)';
-            btn.style.width = '100%';
-            btn.style.marginBottom = '4px';
+            btn.className += ' u-w-full u-mb-4';
             btn.addEventListener('click', () => {
                 uList.querySelectorAll('.ward-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
@@ -751,7 +717,7 @@ function openCompleteTr(tr) {
     // Adverse reaction
     const aDiv = document.createElement('div');
     aDiv.className = 'big-field';
-    aDiv.style.marginTop = '16px';
+    aDiv.className += ' u-mt-16';
     const aLbl = document.createElement('label');
     aLbl.textContent = 'Adverse Reaction?';
     aDiv.appendChild(aLbl);

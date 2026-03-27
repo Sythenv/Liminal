@@ -325,3 +325,76 @@ function createInput(options) {
     if (options.max != null) input.max = options.max;
     return input;
 }
+
+/**
+ * Create a standard card element.
+ * @param {Object} opts
+ * @param {string} opts.id - Lab number / identifier (top left, monospace)
+ * @param {string} opts.status - Status text (top right badge)
+ * @param {string} opts.statusClass - CSS class for status color (e.g., 'completed', 'review', 'rejected')
+ * @param {string} opts.title - Main title (patient name, equipment name)
+ * @param {string} opts.subtitle - Detail line (age, sex, ward...)
+ * @param {Array} opts.badges - [{text, cls}] array of badge objects (cls: 'ok', 'alert', 'panic', etc.)
+ * @param {string} opts.borderClass - CSS class on the card itself (e.g., 'status-completed')
+ * @param {Function} opts.onClick - Click handler
+ * @param {Array} opts.extra - Additional DOM elements to append
+ * @returns {HTMLElement}
+ */
+function createCard(opts) {
+    const card = document.createElement('div');
+    card.className = 'sample-card' + (opts.borderClass ? ' ' + opts.borderClass : '');
+
+    // Top row: id + status badge
+    const top = document.createElement('div');
+    top.className = 'card-top';
+    const idSpan = document.createElement('span');
+    idSpan.className = 'card-lab-number';
+    idSpan.textContent = opts.id || '';
+    const statusSpan = document.createElement('span');
+    statusSpan.className = 'card-status' + (opts.statusClass ? ' ' + opts.statusClass : '');
+    statusSpan.textContent = opts.status || '';
+    top.appendChild(idSpan);
+    top.appendChild(statusSpan);
+    card.appendChild(top);
+
+    // Title (patient name, equipment name, etc.)
+    if (opts.title != null) {
+        const title = document.createElement('div');
+        title.className = 'card-patient';
+        title.textContent = opts.title;
+        card.appendChild(title);
+    }
+
+    // Subtitle / details line
+    if (opts.subtitle != null) {
+        const details = document.createElement('div');
+        details.className = 'card-details';
+        details.textContent = opts.subtitle;
+        card.appendChild(details);
+    }
+
+    // Test/screening badges
+    if (opts.badges && opts.badges.length > 0) {
+        const tests = document.createElement('div');
+        tests.className = 'card-tests';
+        opts.badges.forEach(function (b) {
+            var badge = document.createElement('span');
+            badge.className = 'card-test-badge' + (b.cls ? ' ' + b.cls : '');
+            badge.textContent = b.text;
+            tests.appendChild(badge);
+        });
+        card.appendChild(tests);
+    }
+
+    // Extra elements
+    if (opts.extra) {
+        opts.extra.forEach(function (el) { card.appendChild(el); });
+    }
+
+    // Click handler
+    if (opts.onClick) {
+        card.addEventListener('click', opts.onClick);
+    }
+
+    return card;
+}

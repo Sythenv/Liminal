@@ -2139,6 +2139,53 @@ h2 { color: var(--primary); margin: 20px 0 16px; font-size: 20px; }
     background: var(--green-dark);
 }
 
+/* ===== UTILITY CLASSES ===== */
+.u-mt-6 { margin-top: 6px; }
+.u-mt-16 { margin-top: 16px; }
+.u-w-full { width: 100%; }
+.u-mb-4 { margin-bottom: 4px; }
+.u-font-sm { font-size: 14px; }
+.u-selected-border { border-left: 5px solid var(--purple); }
+
+/* Patient detail: lab history heading */
+.lab-history-title {
+    margin: 16px 0 8px;
+    color: var(--primary);
+    font-size: 16px;
+}
+
+/* Patient detail: result item top row */
+.result-item-top {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+/* Patient detail: lab number in result items */
+.result-lab-number {
+    font-family: monospace;
+    font-size: 13px;
+    color: var(--gray);
+}
+
+/* Patient detail: status label in result items */
+.result-status {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.result-status.status-completed { color: var(--green-dark); }
+.result-status.status-review { color: var(--purple); }
+.result-status.status-in_progress { color: var(--orange); }
+.result-status.status-registered { color: var(--blue); }
+.result-status.status-rejected { color: var(--primary); }
+
+/* Patient detail: date line in result items */
+.result-date-line {
+    font-size: 14px;
+    font-weight: 700;
+}
+
 /* ===== PRINT ===== */
 @media print {
     .app-header, .fab, .day-header { display: none; }

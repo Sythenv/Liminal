@@ -36,59 +36,37 @@ function loadEquipment() {
         const today = new Date().toISOString().split('T')[0];
 
         items.forEach(eq => {
-            const card = document.createElement('div');
             const isActive = eq.is_active;
-            card.className = 'sample-card' + (isActive ? '' : ' status-rejected');
-            card.addEventListener('click', () => selectEquipment(eq));
-
-            const top = document.createElement('div');
-            top.className = 'card-top';
-            const cat = document.createElement('span');
-            cat.className = 'card-lab-number';
-            cat.textContent = eq.category || 'Other';
-            const cond = document.createElement('span');
             const condClass = {Good: 'completed', Fair: 'in_progress', Poor: 'review'}[eq.physical_condition] || 'registered';
-            cond.className = 'card-status ' + condClass;
-            cond.textContent = eq.physical_condition || 'Good';
-            top.appendChild(cat);
-            top.appendChild(cond);
-            card.appendChild(top);
 
-            const name = document.createElement('div');
-            name.className = 'card-patient';
-            name.textContent = eq.name;
-            card.appendChild(name);
-
-            const det = document.createElement('div');
-            det.className = 'card-details';
             const parts = [];
             if (eq.model) parts.push(eq.model);
             if (eq.serial_number) parts.push('S/N: ' + eq.serial_number);
             if (eq.location) parts.push(eq.location);
-            det.textContent = parts.join(' \u00b7 ');
-            card.appendChild(det);
 
-            // Maintenance info
+            // Maintenance badges
+            const badges = [];
             if (eq.last_maintenance) {
-                const maint = document.createElement('div');
-                maint.className = 'card-tests';
-                const badge = document.createElement('span');
-                badge.className = 'card-test-badge has-result';
-                badge.textContent = 'Last: ' + eq.last_maintenance.log_date + ' (' + eq.last_maintenance.maintenance_type + ')';
-                maint.appendChild(badge);
-
+                badges.push({ text: 'Last: ' + eq.last_maintenance.log_date + ' (' + eq.last_maintenance.maintenance_type + ')', cls: 'has-result' });
                 if (eq.last_maintenance.next_scheduled) {
-                    const next = document.createElement('span');
                     const overdue = eq.last_maintenance.next_scheduled < today;
-                    next.className = 'card-test-badge ' + (overdue ? 'result-positive' : '');
-                    next.textContent = (overdue ? 'OVERDUE: ' : 'Next: ') + eq.last_maintenance.next_scheduled;
-                    maint.appendChild(next);
+                    badges.push({ text: (overdue ? 'OVERDUE: ' : 'Next: ') + eq.last_maintenance.next_scheduled, cls: overdue ? 'result-positive' : '' });
                 }
-                card.appendChild(maint);
             }
 
+            const card = createCard({
+                id: eq.category || 'Other',
+                status: eq.physical_condition || 'Good',
+                statusClass: condClass,
+                title: eq.name,
+                subtitle: parts.join(' \u00b7 '),
+                badges: badges,
+                borderClass: isActive ? '' : 'status-rejected',
+                onClick: () => selectEquipment(eq)
+            });
+
             // Highlight selected
-            if (selectedEquipId === eq.id) card.style.borderLeft = '5px solid var(--purple)';
+            if (selectedEquipId === eq.id) card.classList.add('u-selected-border');
 
             list.appendChild(card);
         });
@@ -113,38 +91,28 @@ function loadMaintenance(eqId) {
         empty.style.display = 'none';
 
         logs.forEach(log => {
-            const card = document.createElement('div');
             const typeColor = { PREVENTIVE: 'status-completed', CORRECTIVE: 'status-in_progress', CALIBRATION: 'status-registered' };
-            card.className = 'sample-card ' + (typeColor[log.maintenance_type] || '');
+            const typeStatus = { PREVENTIVE: 'completed', CORRECTIVE: 'in_progress', CALIBRATION: 'registered' };
 
-            const top = document.createElement('div');
-            top.className = 'card-top';
-            const date = document.createElement('span');
-            date.className = 'card-lab-number';
-            date.textContent = log.log_date;
-            const type = document.createElement('span');
-            type.className = 'card-status ' + (log.maintenance_type === 'PREVENTIVE' ? 'completed' : log.maintenance_type === 'CORRECTIVE' ? 'in_progress' : 'registered');
-            type.textContent = log.maintenance_type;
-            top.appendChild(date);
-            top.appendChild(type);
-            card.appendChild(top);
-
-            if (log.description) {
-                const desc = document.createElement('div');
-                desc.className = 'card-patient';
-                desc.style.fontSize = '14px';
-                desc.textContent = log.description;
-                card.appendChild(desc);
-            }
-
-            const det = document.createElement('div');
-            det.className = 'card-details';
             const parts = [];
             if (log.performed_by) parts.push('By: ' + log.performed_by);
             if (log.parts_replaced) parts.push('Parts: ' + log.parts_replaced);
             if (log.next_scheduled) parts.push('Next: ' + log.next_scheduled);
-            det.textContent = parts.join(' \u00b7 ');
-            card.appendChild(det);
+
+            const card = createCard({
+                id: log.log_date,
+                status: log.maintenance_type,
+                statusClass: typeStatus[log.maintenance_type] || 'registered',
+                title: log.description || null,
+                subtitle: parts.join(' \u00b7 '),
+                borderClass: typeColor[log.maintenance_type] || ''
+            });
+
+            // Apply smaller font for description (matches original styling)
+            if (log.description) {
+                const titleEl = card.querySelector('.card-patient');
+                if (titleEl) titleEl.classList.add('u-font-sm');
+            }
 
             list.appendChild(card);
         });

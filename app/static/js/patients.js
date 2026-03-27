@@ -26,35 +26,19 @@ function loadPatients(query) {
         empty.style.display = 'none';
 
         patients.forEach(p => {
-            const card = document.createElement('div');
-            card.className = 'sample-card';
-            card.addEventListener('click', () => openPatientDetail(p.id));
-
-            const top = document.createElement('div');
-            top.className = 'card-top';
-            const num = document.createElement('span');
-            num.className = 'card-lab-number';
-            num.textContent = p.patient_number;
-            const sexBadge = document.createElement('span');
-            sexBadge.className = 'card-status completed';
-            sexBadge.textContent = p.sex || '?';
-            top.appendChild(num);
-            top.appendChild(sexBadge);
-            card.appendChild(top);
-
-            const name = document.createElement('div');
-            name.className = 'card-patient';
-            name.textContent = p.name;
-            card.appendChild(name);
-
-            const details = document.createElement('div');
-            details.className = 'card-details';
             const parts = [];
             if (p.age) parts.push(p.age + (p.age_unit || 'Y'));
             if (p.village) parts.push(p.village);
             if (p.contact) parts.push(p.contact);
-            details.textContent = parts.join(' \u00b7 ');
-            card.appendChild(details);
+
+            const card = createCard({
+                id: p.patient_number,
+                status: p.sex || '?',
+                statusClass: 'completed',
+                title: p.name,
+                subtitle: parts.join(' \u00b7 '),
+                onClick: () => openPatientDetail(p.id)
+            });
 
             list.appendChild(card);
         });
@@ -99,9 +83,7 @@ function openPatientDetail(patientId) {
             // Lab history
             const histTitle = document.createElement('h3');
             histTitle.textContent = 'Lab History (' + data.lab_history.length + ')';
-            histTitle.style.margin = '16px 0 8px';
-            histTitle.style.color = 'var(--primary)';
-            histTitle.style.fontSize = '16px';
+            histTitle.className = 'lab-history-title';
             body.appendChild(histTitle);
 
             if (data.lab_history.length === 0) {
@@ -115,32 +97,24 @@ function openPatientDetail(patientId) {
                     card.className = 'result-item';
 
                     const top = document.createElement('div');
-                    top.style.display = 'flex';
-                    top.style.justifyContent = 'space-between';
-                    top.style.marginBottom = '4px';
+                    top.className = 'result-item-top';
 
                     const labNum = document.createElement('span');
-                    labNum.style.fontFamily = 'monospace';
-                    labNum.style.fontSize = '13px';
-                    labNum.style.color = 'var(--gray)';
+                    labNum.className = 'result-lab-number';
                     labNum.textContent = entry.lab_number;
                     top.appendChild(labNum);
 
                     const status = document.createElement('span');
-                    const statusColors = { COMPLETED: 'var(--green-dark)', REVIEW: 'var(--purple)',
-                        IN_PROGRESS: 'var(--orange)', REGISTERED: 'var(--blue)', REJECTED: 'var(--primary)' };
-                    status.style.fontSize = '11px';
-                    status.style.fontWeight = '700';
-                    status.style.textTransform = 'uppercase';
-                    status.style.color = statusColors[entry.status] || 'var(--gray)';
+                    const statusClassMap = { COMPLETED: 'status-completed', REVIEW: 'status-review',
+                        IN_PROGRESS: 'status-in_progress', REGISTERED: 'status-registered', REJECTED: 'status-rejected' };
+                    status.className = 'result-status ' + (statusClassMap[entry.status] || '');
                     status.textContent = entry.status;
                     top.appendChild(status);
 
                     card.appendChild(top);
 
                     const date = document.createElement('div');
-                    date.style.fontSize = '14px';
-                    date.style.fontWeight = '700';
+                    date.className = 'result-date-line';
                     date.textContent = entry.reception_date;
                     if (entry.ward) date.textContent += ' \u00b7 ' + entry.ward;
                     if (entry.specimen_type) date.textContent += ' \u00b7 ' + entry.specimen_type;
@@ -149,7 +123,7 @@ function openPatientDetail(patientId) {
                     if (entry.test_codes) {
                         const tests = document.createElement('div');
                         tests.className = 'card-tests';
-                        tests.style.marginTop = '6px';
+                        tests.classList.add('u-mt-6');
                         entry.test_codes.split(',').forEach(code => {
                             const badge = document.createElement('span');
                             badge.className = 'card-test-badge';

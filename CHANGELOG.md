@@ -65,5 +65,8 @@ First release. Standalone kits Linux + Windows (Python embarqué, 0 dépendance)
 - Unified signal system for badges and buttons
 - 3 text sizes, 2 radius values, 1 shadow
 - Legacy aliases preserved for backward compat
+- createCard() helper in components.js — declarative card building
+- Unified auth: single authFetch() pattern, removed pinProtect redundancy
+- Inline styles migrated to CSS utility classes (bloodbank, equipment, patients)
 - RFC rewritten as operational roadmap with sprint planning
 - CLAUDE.md compressed (79→22 lines)

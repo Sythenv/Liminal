@@ -377,7 +377,7 @@ function buildReviewTable(entries) {
         vBtn.textContent = 'Validate';
         vBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            pinProtect(() => executeValidate(entry.id));
+            executeValidate(entry.id);
         });
         tdActions.appendChild(vBtn);
         tr.appendChild(tdActions);
@@ -427,10 +427,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btnStep2Back').addEventListener('click', () => goStep(1));
     document.getElementById('btnStep2Next').addEventListener('click', () => goStep(3));
     document.getElementById('btnStep3Back').addEventListener('click', () => goStep(2));
-    document.getElementById('btnSubmitEntry').addEventListener('click', () => pinProtect(submitEntry));
+    document.getElementById('btnSubmitEntry').addEventListener('click', submitEntry);
     document.getElementById('btnCloseResult').addEventListener('click', closeResultModal);
     document.getElementById('btnCloseResultFooter').addEventListener('click', closeResultModal);
-    document.getElementById('btnSaveResults').addEventListener('click', () => pinProtect(saveResults));
+    document.getElementById('btnSaveResults').addEventListener('click', saveResults);
     document.getElementById('btnStartReject').addEventListener('click', startRejectFlow);
     document.getElementById('btnClearPatient').addEventListener('click', clearPatientSelection);
 
@@ -846,9 +846,9 @@ function submitEntry() {
             patient_fk: patientFk
         };
 
-        fetch('/api/register/entries', {
+        authFetch('/api/register/entries', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Operator-Pin': currentPin || '' },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         })
         .then(r => r.json())
@@ -865,9 +865,9 @@ function submitEntry() {
         doSubmit(wizardData.patient_fk);
     } else {
         // New patient — create record first, then submit entry
-        fetch('/api/patients', {
+        authFetch('/api/patients', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Operator-Pin': currentPin || '' },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 name: patientName,
                 age: wizardData.age ? parseInt(wizardData.age) : null,
@@ -1517,17 +1517,15 @@ function confirmReject(reason) {
     const confirmBtn = document.createElement('button');
     confirmBtn.className = 'wiz-btn wiz-btn-reject-confirm';
     confirmBtn.textContent = 'Confirm Rejection';
-    confirmBtn.addEventListener('click', () => pinProtect(() => executeReject(reason)));
+    confirmBtn.addEventListener('click', () => executeReject(reason));
     rejectFooter.appendChild(cancelBtn);
     rejectFooter.appendChild(confirmBtn);
 }
 
 function executeReject(reason) {
-    const pin = currentPin || sessionPin;
-    if (!pin) { showNumpad(p => { currentPin = p; executeReject(reason); }); return; }
-    fetch(`/api/register/entries/${currentEntryId}/reject`, {
+    authFetch(`/api/register/entries/${currentEntryId}/reject`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Operator-Pin': pin },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: reason })
     }).then(r => {
         if (r.ok) {
@@ -1542,14 +1540,9 @@ function executeReject(reason) {
 
 function executeValidate(entryId, bypassFourEyes) {
     const payload = bypassFourEyes ? { bypass_four_eyes: true } : {};
-    const pin = currentPin || sessionPin;
-    if (!pin) {
-        showNumpad(p => { currentPin = p; executeValidate(entryId, bypassFourEyes); });
-        return;
-    }
-    fetch(`/api/register/entries/${entryId}/validate`, {
+    authFetch(`/api/register/entries/${entryId}/validate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Operator-Pin': pin },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
     }).then(r => {
         if (r.ok) {
@@ -1582,11 +1575,9 @@ function executeValidate(entryId, bypassFourEyes) {
 }
 
 function executeUnreject(entryId) {
-    const pin = currentPin || sessionPin;
-    if (!pin) { showNumpad(p => { currentPin = p; executeUnreject(entryId); }); return; }
-    fetch(`/api/register/entries/${entryId}/unreject`, {
+    authFetch(`/api/register/entries/${entryId}/unreject`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Operator-Pin': pin },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
     }).then(r => {
         if (r.ok) {
@@ -1663,12 +1654,9 @@ function collectPayload() {
 }
 
 function submitPayload(payload) {
-    fetch(`/api/register/entries/${currentEntryId}/results`, {
+    authFetch(`/api/register/entries/${currentEntryId}/results`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Operator-Pin': currentPin || ''
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
     }).then(r => {
         if (r.ok) {
