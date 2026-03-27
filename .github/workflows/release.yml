@@ -1,0 +1,93 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+env:
+  PYTHON_STANDALONE_VERSION: "20250317"
+  PYTHON_VERSION: "3.12.9"
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Python standalone
+        run: |
+          curl -L -o python.tar.gz \
+            "https://github.com/astral-sh/python-build-standalone/releases/download/$PYTHON_STANDALONE_VERSION/cpython-${PYTHON_VERSION}+${PYTHON_STANDALONE_VERSION}-x86_64-unknown-linux-gnu-install_only.tar.gz"
+          mkdir -p runtime
+          tar xzf python.tar.gz -C runtime --strip-components=1
+
+      - name: Install dependencies
+        run: |
+          runtime/bin/python3 -m pip install --target=lib -r requirements.txt
+
+      - name: Package kit
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          mkdir -p "liminal-${TAG}-linux/data/exports"
+          cp -r app migrations config.json start.sh "liminal-${TAG}-linux/"
+          cp -r runtime "liminal-${TAG}-linux/"
+          cp -r lib "liminal-${TAG}-linux/"
+          chmod +x "liminal-${TAG}-linux/start.sh"
+          tar czf "liminal-${TAG}-linux.tar.gz" "liminal-${TAG}-linux"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-kit
+          path: liminal-*.tar.gz
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Python standalone
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/astral-sh/python-build-standalone/releases/download/$env:PYTHON_STANDALONE_VERSION/cpython-$env:PYTHON_VERSION+$env:PYTHON_STANDALONE_VERSION-x86_64-pc-windows-msvc-install_only.tar.gz" -OutFile python.tar.gz
+          mkdir runtime
+          tar xzf python.tar.gz -C runtime --strip-components=1
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          runtime\python.exe -m pip install --target=lib -r requirements.txt
+
+      - name: Package kit
+        shell: pwsh
+        run: |
+          $tag = $env:GITHUB_REF -replace 'refs/tags/', ''
+          $dir = "liminal-${tag}-windows"
+          mkdir "$dir\data\exports"
+          Copy-Item -Recurse app, migrations, config.json, start.bat, runtime, lib $dir
+          Compress-Archive -Path $dir -DestinationPath "${dir}.zip"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-kit
+          path: liminal-*.zip
+
+  release:
+    needs: [build-linux, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            liminal-*.tar.gz
+            liminal-*.zip
