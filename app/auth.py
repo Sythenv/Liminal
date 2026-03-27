@@ -13,6 +13,10 @@ No decorators on endpoints. No auth imports in API modules (except get_current_o
 import os
 import re
 import hashlib
+
+# PINs blocked: duress patterns + common weak sequences
+WEAK_PINS = {'0000','1111','2222','3333','4444','5555','6666','7777','8888','9999',
+             '1234','4321','0123','1230','9876','6789'}
 from flask import Blueprint, request, jsonify, g
 from app.db import get_db
 
@@ -120,6 +124,19 @@ def verify_pin(pin, operator_row):
     return expected == operator_row['pin_hash']
 
 
+def validate_new_pin(db, pin):
+    """Validate a new PIN. Returns error string or None if OK."""
+    if len(pin) < 4 or len(pin) > 8 or not pin.isdigit():
+        return 'PIN must be 4-8 digits'
+    if pin in WEAK_PINS:
+        return 'PIN too weak (common pattern)'
+    # Check for duplicates
+    for op in db.execute('SELECT pin_hash, pin_salt FROM operator WHERE is_active = 1').fetchall():
+        if hash_pin(pin, op['pin_salt']) == op['pin_hash']:
+            return 'PIN already in use by another operator'
+    return None
+
+
 def get_operator_by_pin(db, pin):
     operators = db.execute('SELECT * FROM operator WHERE is_active = 1').fetchall()
     for op in operators:
@@ -211,8 +228,10 @@ def setup():
 
     if not name:
         return jsonify({'error': 'name is required'}), 400
-    if len(pin) < 4 or len(pin) > 8 or not pin.isdigit():
-        return jsonify({'error': 'PIN must be 4-8 digits'}), 400
+
+    pin_error = validate_new_pin(db, pin)
+    if pin_error:
+        return jsonify({'error': pin_error}), 400
 
     salt = generate_salt()
     pin_h = hash_pin(pin, salt)
@@ -264,10 +283,12 @@ def create_operator():
 
     if not name:
         return jsonify({'error': 'name is required'}), 400
-    if len(pin) < 4 or len(pin) > 8 or not pin.isdigit():
-        return jsonify({'error': 'PIN must be 4-8 digits'}), 400
     if level not in (1, 2, 3):
         return jsonify({'error': 'Invalid level'}), 400
+
+    pin_error = validate_new_pin(db, pin)
+    if pin_error:
+        return jsonify({'error': pin_error}), 400
 
     salt = generate_salt()
     pin_h = hash_pin(pin, salt)
@@ -314,8 +335,9 @@ def update_operator(op_id):
 
     if 'pin' in data:
         new_pin = str(data['pin'])
-        if len(new_pin) < 4 or len(new_pin) > 8 or not new_pin.isdigit():
-            return jsonify({'error': 'PIN must be 4-8 digits'}), 400
+        pin_error = validate_new_pin(db, new_pin)
+        if pin_error:
+            return jsonify({'error': pin_error}), 400
         salt = generate_salt()
         pin_h = hash_pin(new_pin, salt)
         db.execute('UPDATE operator SET pin_hash = ?, pin_salt = ? WHERE id = ?', (pin_h, salt, op_id))

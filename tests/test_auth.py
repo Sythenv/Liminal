@@ -1,8 +1,8 @@
 """Auth engine tests — PIN verification, level enforcement, four-eyes."""
 
-ADMIN_PIN = '123456'
-SUPER_PIN = '2222'
-OPER_PIN = '3333'
+ADMIN_PIN = '7890'
+SUPER_PIN = '4567'
+OPER_PIN = '2345'
 
 
 def H(pin):
@@ -21,12 +21,12 @@ def setup_operators(client):
 class TestSetup:
 
     def test_first_setup_creates_admin(self, client):
-        resp = client.post('/api/auth/setup', json={'name': 'Admin', 'pin': '1234'})
+        resp = client.post('/api/auth/setup', json={'name': 'Admin', 'pin': '7890'})
         assert resp.status_code == 201
 
     def test_setup_fails_if_admin_exists(self, client):
-        client.post('/api/auth/setup', json={'name': 'Admin', 'pin': '1234'})
-        resp = client.post('/api/auth/setup', json={'name': 'Hacker', 'pin': '0000'})
+        client.post('/api/auth/setup', json={'name': 'Admin', 'pin': '7890'})
+        resp = client.post('/api/auth/setup', json={'name': 'Hacker', 'pin': '5678'})
         assert resp.status_code == 400
 
     def test_pin_must_be_digits(self, client):
@@ -36,6 +36,19 @@ class TestSetup:
     def test_pin_min_4_digits(self, client):
         resp = client.post('/api/auth/setup', json={'name': 'Admin', 'pin': '12'})
         assert resp.status_code == 400
+
+    def test_weak_pin_rejected(self, client):
+        resp = client.post('/api/auth/setup', json={'name': 'Admin', 'pin': '1234'})
+        assert resp.status_code == 400
+        assert 'weak' in resp.get_json()['error'].lower()
+
+    def test_duplicate_pin_rejected(self, client):
+        client.post('/api/auth/setup', json={'name': 'Admin', 'pin': ADMIN_PIN})
+        resp = client.post('/api/auth/operators', json={
+            'name': 'Dup', 'pin': ADMIN_PIN, 'level': 1
+        }, headers=H(ADMIN_PIN))
+        assert resp.status_code == 400
+        assert 'already in use' in resp.get_json()['error'].lower()
 
 
 class TestPINVerification:
