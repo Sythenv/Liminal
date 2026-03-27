@@ -826,10 +826,11 @@ function buildConfirmSummary() {
 }
 
 function submitEntry() {
-    const patientName = wizardData.patient_name || document.getElementById('wPatientName').value;
+    const patientName = (wizardData.patient_name || document.getElementById('wPatientName').value || '').trim();
     if (!patientName) {
         goStep(1);
         document.getElementById('wPatientName').focus();
+        showModal({ title: 'Required', message: 'Patient name is required.', type: 'warning' });
         return;
     }
 

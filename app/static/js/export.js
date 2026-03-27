@@ -16,7 +16,7 @@ function exportData(format) {
 
     const url = format === 'excel' ? '/api/export/excel' : '/api/export/csv';
 
-    fetch(url, {
+    authFetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ date_from: dateFrom, date_to: dateTo })

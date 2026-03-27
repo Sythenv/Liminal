@@ -53,6 +53,10 @@ First release. Standalone kits Linux + Windows (Python embarqué, 0 dépendance)
 - Config API: GET/PUT site config, GET/PUT active tests
 
 ### Fixed
+- PIN session persisted in sessionStorage (survives page navigation)
+- Equipment: create + maintenance now use authFetch
+- Export: Excel/CSV now use authFetch
+- Empty patient name validation with modal warning
 - bloodbank.js: all API calls use authFetch instead of raw fetch
 - register.js: validate, reject, unreject use authFetch + JSON body
 - Removed double PIN prompt on validate/reject/unreject (pinProtect + authFetch redundancy)

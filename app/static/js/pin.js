@@ -123,23 +123,43 @@ function pinProtect(callback) {
     });
 }
 
-// ===== SESSION =====
+// ===== SESSION (persisted in sessionStorage) =====
 
 let sessionPin = null;
 let sessionLevel = 0;
 let sessionExpiry = 0;
 const SESSION_TTL = 15 * 60 * 1000; // 15 minutes
 
-function setSession(pin, level) {
+// Restore session from sessionStorage on page load
+try {
+    const saved = JSON.parse(sessionStorage.getItem('liminal_session'));
+    if (saved && saved.expiry > Date.now()) {
+        sessionPin = saved.pin;
+        sessionLevel = saved.level;
+        sessionExpiry = saved.expiry;
+        currentPin = saved.pin;
+        currentLevel = saved.level;
+        currentOperatorName = saved.name;
+    }
+} catch(e) {}
+
+function setSession(pin, level, name) {
     sessionPin = pin;
     sessionLevel = level || 0;
     sessionExpiry = Date.now() + SESSION_TTL;
+    currentPin = pin;
+    currentLevel = level || 0;
+    if (name) currentOperatorName = name;
+    sessionStorage.setItem('liminal_session', JSON.stringify({
+        pin: pin, level: level || 0, expiry: sessionExpiry, name: currentOperatorName
+    }));
 }
 
 function getSessionPin() {
     if (sessionPin && Date.now() < sessionExpiry) return sessionPin;
     sessionPin = null;
     sessionLevel = 0;
+    sessionStorage.removeItem('liminal_session');
     return null;
 }
 
@@ -179,7 +199,7 @@ function authFetch(url, options) {
                     currentPin = pin;
                     currentLevel = data.level;
                     currentOperatorName = data.name;
-                    setSession(pin, data.level);
+                    setSession(pin, data.level, data.name);
                 }
             });
             doFetch(pin);
@@ -784,7 +804,7 @@ function unlockNav() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ pin: pin })
         }).then(r => r.json()).then(data => {
-            if (data.id) setSession(pin, data.level);
+            if (data.id) setSession(pin, data.level, data.name);
         });
         applyNavUnlock();
     }, 'Enter PIN to unlock');

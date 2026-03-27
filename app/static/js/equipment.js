@@ -227,11 +227,14 @@ function openAddEquipment() {
             installation_date: document.getElementById('eqDate').value || null,
             physical_condition: condActive ? condActive.dataset.value : 'Good'
         };
-        fetch('/api/equipment', {
+        authFetch('/api/equipment', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
-        }).then(r => { if (r.ok) { closeModal(); loadEquipment(); } });
+        }).then(r => {
+            if (r.ok) { closeModal(); loadEquipment(); }
+            else { r.json().then(d => showModal({ title: 'Error', message: d.error || 'Failed', type: 'danger' })); }
+        });
     });
     footer.appendChild(cancelBtn);
     footer.appendChild(saveBtn);
@@ -338,11 +341,14 @@ function openAddMaintenance() {
             performed_by: document.getElementById('mBy').value,
             next_scheduled: document.getElementById('mNext').value || null
         };
-        fetch('/api/equipment/' + selectedEquipId + '/maintenance', {
+        authFetch('/api/equipment/' + selectedEquipId + '/maintenance', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
-        }).then(r => { if (r.ok) { closeModal(); loadEquipment(); loadMaintenance(selectedEquipId); } });
+        }).then(r => {
+            if (r.ok) { closeModal(); loadEquipment(); loadMaintenance(selectedEquipId); }
+            else { r.json().then(d => showModal({ title: 'Error', message: d.error || 'Failed', type: 'danger' })); }
+        });
     });
     footer.appendChild(cancelBtn);
     footer.appendChild(saveBtn);
