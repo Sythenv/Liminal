@@ -26,8 +26,24 @@ def export():
                            lang=current_app.config['DEFAULT_LANGUAGE'])
 
 
-@bp.route('/settings')
-def settings():
-    return render_template('config.html',
+@bp.route('/patients')
+def patients():
+    return render_template('patients.html',
                            site_name=current_app.config['SITE_NAME'],
                            lang=current_app.config['DEFAULT_LANGUAGE'])
+
+
+@bp.route('/bloodbank')
+def bloodbank():
+    return render_template('bloodbank.html',
+                           site_name=current_app.config['SITE_NAME'],
+                           lang=current_app.config['DEFAULT_LANGUAGE'])
+
+
+@bp.route('/equipment')
+def equipment():
+    return render_template('equipment.html',
+                           site_name=current_app.config['SITE_NAME'],
+                           lang=current_app.config['DEFAULT_LANGUAGE'])
+
+

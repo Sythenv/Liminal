@@ -74,11 +74,13 @@ def seed_data(app):
 
     for t in tests:
         db.execute('''INSERT INTO test_definition
-            (code, name_en, name_fr, category, specimen_types, result_type, unit, reference_range_text, display_order)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+            (code, name_en, name_fr, category, specimen_types, result_type, unit, reference_range_text, panic_low, panic_high, display_order)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
             (t['code'], t['name_en'], t['name_fr'], t['category'],
              json.dumps(t.get('specimen_types', [])), t['result_type'],
-             t.get('unit'), t.get('reference_range_text'), t.get('display_order', 0)))
+             t.get('unit'), t.get('reference_range_text'),
+             t.get('panic_low'), t.get('panic_high'),
+             t.get('display_order', 0)))
 
     # Seed site config from config.json
     site_exists = db.execute('SELECT 1 FROM site_config WHERE id = 1').fetchone()

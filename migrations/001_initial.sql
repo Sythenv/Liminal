@@ -1,4 +1,4 @@
--- MSF Laboratory Registration System - Initial Schema
+-- Laboratory Registration System - Initial Schema
 -- MVP + RFC tables
 
 -- Track applied migrations

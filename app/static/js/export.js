@@ -5,6 +5,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const firstOfMonth = today.substring(0, 8) + '01';
     document.getElementById('exportFrom').value = firstOfMonth;
     document.getElementById('exportTo').value = today;
+
+    document.getElementById('btnExportExcel').addEventListener('click', () => exportData('excel'));
+    document.getElementById('btnExportCsv').addEventListener('click', () => exportData('csv'));
 });
 
 function exportData(format) {

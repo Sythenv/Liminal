@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Equipment Register</h2>
+
+<div class="card-list" id="equipList"></div>
+<div id="equipEmpty" class="empty-state" style="display:none">
+    <p>No equipment registered</p>
+</div>
+
+<!-- Maintenance section (shown when equipment selected) -->
+<div id="maintSection" style="display:none">
+    <h2 id="maintTitle"></h2>
+    <div class="card-list" id="maintList"></div>
+    <div id="maintEmpty" class="empty-state" style="display:none">
+        <p>No maintenance records</p>
+    </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="eqFab" title="Add">
+    <span class="fab-icon">+</span>
+</button>
+
+<!-- MODAL -->
+<div id="eqModal" class="wizard-overlay" style="display:none">
+    <div class="wizard-container">
+        <div class="wizard-header">
+            <h2 id="eqModalTitle"></h2>
+            <button id="eqModalClose" class="wizard-close">&times;</button>
+        </div>
+        <div class="wizard-body" id="eqModalBody"></div>
+        <div class="wizard-footer" id="eqModalFooter"></div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/equipment.js"></script>
+{% endblock %}

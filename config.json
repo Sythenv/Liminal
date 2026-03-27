@@ -1,7 +1,7 @@
 {
-    "site_name": "Aweil Civil Hospital",
-    "site_code": "AWL",
-    "country": "SSD",
+    "site_name": "Liminal",
+    "site_code": "LAB",
+    "country": "",
     "default_language": "en",
     "lab_number_format": "{site_code}-{year}-{seq:04d}",
     "host": "127.0.0.1",

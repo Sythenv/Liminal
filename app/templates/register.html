@@ -1,31 +1,161 @@
 {% extends "base.html" %}
+{% block nav_style %}style="display:none"{% endblock %}
+{% block header_style %}style="display:none"{% endblock %}
 {% block content %}
 
-<!-- TODAY'S HEADER -->
-<div class="day-header">
-    <button onclick="changeDay(-1)" class="day-nav">&larr;</button>
-    <div class="day-display">
-        <span class="day-label" data-i18n="today">Today</span>
-        <span class="day-date" id="currentDate"></span>
-        <span class="day-count" id="entryCount"></span>
+<!-- ===== LANDING MODE (default — zero patient data) ===== -->
+<div id="landingMode" class="landing-mode">
+
+    <!-- EDITORIAL — toggle off without affecting UX -->
+    <div id="landingPitch" class="landing-pitch">
+        <div class="pitch-hero">
+            <img src="/static/img/logo.svg" alt="" class="landing-logo">
+            <p class="pitch-tagline">Laboratory Information at the Threshold</p>
+            <div class="pitch-rule"></div>
+        </div>
     </div>
-    <button onclick="changeDay(1)" class="day-nav">&rarr;</button>
+
+    <!-- FUNCTIONAL — always visible -->
+    <div class="landing-action">
+        <div class="landing-input-group">
+            <input type="text" id="labNumberInput" class="landing-input"
+                   placeholder="Lab number, name or DOB (dd/mm/yyyy)" autocomplete="off" autofocus>
+            <button id="btnLookup" class="landing-lookup-btn">?</button>
+        </div>
+        <div id="lookupError" class="lookup-error" style="display:none"></div>
+        <button id="btnNewSample" class="landing-new-btn"><svg width="26" height="26" viewBox="0 0 28 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="8" x2="23" y2="14"/><line x1="26" y1="11" x2="20" y2="11"/></svg></button>
+    </div>
+
+    <!-- EDITORIAL — features -->
+    <div id="landingFeatures" class="landing-pitch" style="display:none">
+        <div class="pitch-section">
+            <h3 class="pitch-section-title">Featuring</h3>
+            <div class="pitch-columns">
+                <div class="pitch-col">
+                    <h4>Laboratory</h4>
+                    <ul>
+                        <li>Structured result entry — CBC, malaria, urinalysis</li>
+                        <li>Patient history and trend tracking</li>
+                        <li>Panic value alerts on critical results</li>
+                    </ul>
+                </div>
+                <div class="pitch-col">
+                    <h4>Blood Bank</h4>
+                    <ul>
+                        <li>Donor register, stock and expiry tracking</li>
+                        <li>Crossmatch and transfusion workflow</li>
+                    </ul>
+                </div>
+                <div class="pitch-col">
+                    <h4>Quality</h4>
+                    <ul>
+                        <li>Sample rejection workflow — 9 constrained reasons</li>
+                        <li>Four-eyes validation — operator ≠ validator</li>
+                        <li>ISO 15189 compliant audit trail</li>
+                    </ul>
+                </div>
+                <div class="pitch-col">
+                    <h4>Security</h4>
+                    <ul>
+                        <li>Zero-trust PIN per action — no sessions</li>
+                        <li>AES-256 encryption, SHA-256 integrity</li>
+                        <li>Tamper-proof record hashing</li>
+                    </ul>
+                </div>
+                <div class="pitch-col">
+                    <h4>Reporting</h4>
+                    <ul>
+                        <li>Monthly sitrep — volumes, positivity rates</li>
+                        <li>Excel / CSV export</li>
+                    </ul>
+                </div>
+                <div class="pitch-col">
+                    <h4>Equipment</h4>
+                    <ul>
+                        <li>Maintenance log — WHO LQSI categories</li>
+                        <li>Preventive, corrective, calibration tracking</li>
+                    </ul>
+                </div>
+                <div class="pitch-col">
+                    <h4>Localization</h4>
+                    <ul>
+                        <li>Multilingual — English, French, Arabic</li>
+                        <li>RTL support</li>
+                    </ul>
+                </div>
+                <div class="pitch-col">
+                    <h4>Field-ready</h4>
+                    <ul>
+                        <li>Air-gapped — zero network dependency</li>
+                        <li>Portable — USB stick, no install</li>
+                        <li>Barcode scanner ready — Code 128 HID</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="landing-unlock-btn" id="landingUnlockBtn">&#128274;</button>
 </div>
 
-<!-- SAMPLE CARDS -->
-<div class="card-list" id="cardList"></div>
-
-<!-- EMPTY STATE -->
-<div id="emptyState" class="empty-state" style="display:none">
-    <div class="empty-icon">🔬</div>
-    <p data-i18n="no_samples">No samples registered today</p>
-    <p class="empty-hint" data-i18n="tap_to_add">Tap the button below to register a new sample</p>
+<!-- ===== REGISTER MODE (supervisor — unlocked via PIN) ===== -->
+<!-- ===== DASHBOARD MODE (supervisor — after unlock) ===== -->
+<div id="dashboardMode" style="display:none">
+    <div class="dashboard-header">
+        <h2 class="dashboard-title">Dashboard</h2>
+    </div>
+    <div class="dashboard-stats" id="dashboardStats">
+        <button class="stat-card active" data-status="REVIEW" id="statReview">
+            <span class="stat-count">0</span>
+            <span class="stat-label">To validate</span>
+        </button>
+        <button class="stat-card" data-status="REGISTERED,IN_PROGRESS" id="statPending">
+            <span class="stat-count">0</span>
+            <span class="stat-label">Pending</span>
+        </button>
+        <button class="stat-card" data-status="REJECTED" id="statRejected">
+            <span class="stat-count">0</span>
+            <span class="stat-label">Rejected</span>
+        </button>
+        <button class="stat-card" data-status="COMPLETED" id="statCompleted">
+            <span class="stat-count">0</span>
+            <span class="stat-label">Completed</span>
+        </button>
+    </div>
+    <div class="card-list" id="dashboardCards"></div>
+    <div class="dashboard-footer">
+        <button id="btnShowAll" class="dashboard-all-btn">All entries</button>
+    </div>
 </div>
 
-<!-- FAB - New Entry -->
-<button class="fab" onclick="startNewEntry()" title="New sample">
-    <span class="fab-icon">+</span>
-</button>
+<!-- ===== REGISTER MODE (full register view) ===== -->
+<div id="registerMode" style="display:none">
+    <!-- TODAY'S HEADER -->
+    <div class="day-header">
+        <button id="btnPrevDay" class="day-nav">&larr;</button>
+        <div class="day-display">
+            <span class="day-label" data-i18n="today">Today</span>
+            <span class="day-date" id="currentDate"></span>
+            <span class="day-count" id="entryCount"></span>
+        </div>
+        <button id="btnNextDay" class="day-nav">&rarr;</button>
+    </div>
+
+    <!-- SAMPLE CARDS -->
+    <div class="card-list" id="cardList"></div>
+
+    <!-- EMPTY STATE -->
+    <div id="emptyState" class="empty-state" style="display:none">
+        <div class="empty-icon">🔬</div>
+        <p data-i18n="no_samples">No samples registered today</p>
+        <p class="empty-hint" data-i18n="tap_to_add">Tap the button below to register a new sample</p>
+    </div>
+
+    <!-- FAB - New Entry -->
+    <button class="fab" id="btnNewEntry" title="New sample">
+        <span class="fab-icon">+</span>
+    </button>
+</div>
 
 <!-- ===== WIZARD MODAL ===== -->
 <div id="wizardModal" class="wizard-overlay" style="display:none">
@@ -36,10 +166,14 @@
             <div class="wizard-header">
                 <span class="step-indicator">1 / 3</span>
                 <h2 data-i18n="patient_info">Patient</h2>
-                <button onclick="closeWizard()" class="wizard-close">&times;</button>
+                <button class="wizard-close btn-close-wizard">&times;</button>
             </div>
             <div class="wizard-body">
-                <div class="big-field">
+                <div id="patientSelected" class="patient-selected-banner" style="display:none">
+                    <span id="patientSelectedInfo"></span>
+                    <button type="button" id="btnClearPatient" class="patient-clear-btn">&times;</button>
+                </div>
+                <div class="big-field" id="patientNameField">
                     <label data-i18n="patient_name">Patient Name</label>
                     <input type="text" id="wPatientName" class="big-input" autocomplete="off" placeholder="">
                     <div id="wSuggestions" class="suggestions"></div>
@@ -65,7 +199,7 @@
                     </div>
                 </div>
                 <div class="big-field">
-                    <label data-i18n="ward">Ward</label>
+                    <label data-i18n="ward">Service</label>
                     <div class="ward-btns" id="wardBtns">
                         <button type="button" class="ward-btn" data-ward="OPD">OPD</button>
                         <button type="button" class="ward-btn" data-ward="IPD">IPD</button>
@@ -77,10 +211,17 @@
                         <button type="button" class="ward-btn" data-ward="NCD">NCD</button>
                     </div>
                 </div>
+                <div class="big-field">
+                    <label>Collection Time</label>
+                    <div class="collection-time-row">
+                        <button type="button" class="now-btn" id="btnCollectionNow">NOW</button>
+                        <input type="time" id="wCollectionTime" class="big-input collection-time-input">
+                    </div>
+                </div>
             </div>
             <div class="wizard-footer">
-                <button onclick="closeWizard()" class="wiz-btn wiz-btn-cancel" data-i18n="cancel">Cancel</button>
-                <button onclick="goStep(2)" class="wiz-btn wiz-btn-next" data-i18n="next">Next &rarr;</button>
+                <button class="wiz-btn wiz-btn-cancel btn-close-wizard" data-i18n="cancel">Cancel</button>
+                <button id="btnStep1Next" class="wiz-btn wiz-btn-next" data-i18n="next">Next &rarr;</button>
             </div>
         </div>
 
@@ -89,14 +230,14 @@
             <div class="wizard-header">
                 <span class="step-indicator">2 / 3</span>
                 <h2 data-i18n="select_tests">Select Tests</h2>
-                <button onclick="closeWizard()" class="wizard-close">&times;</button>
+                <button class="wizard-close btn-close-wizard">&times;</button>
             </div>
             <div class="wizard-body">
                 <div id="testCategories" class="test-categories"></div>
             </div>
             <div class="wizard-footer">
-                <button onclick="goStep(1)" class="wiz-btn wiz-btn-back" data-i18n="back">&larr; Back</button>
-                <button onclick="goStep(3)" class="wiz-btn wiz-btn-next" data-i18n="next">Next &rarr;</button>
+                <button id="btnStep2Back" class="wiz-btn wiz-btn-back" data-i18n="back">&larr; Back</button>
+                <button id="btnStep2Next" class="wiz-btn wiz-btn-next" data-i18n="next">Next &rarr;</button>
             </div>
         </div>
 
@@ -105,14 +246,14 @@
             <div class="wizard-header">
                 <span class="step-indicator">3 / 3</span>
                 <h2 data-i18n="confirm">Confirm</h2>
-                <button onclick="closeWizard()" class="wizard-close">&times;</button>
+                <button class="wizard-close btn-close-wizard">&times;</button>
             </div>
             <div class="wizard-body">
                 <div class="confirm-summary" id="confirmSummary"></div>
             </div>
             <div class="wizard-footer">
-                <button onclick="goStep(2)" class="wiz-btn wiz-btn-back" data-i18n="back">&larr; Back</button>
-                <button onclick="submitEntry()" class="wiz-btn wiz-btn-confirm" data-i18n="register_sample">Register Sample</button>
+                <button id="btnStep3Back" class="wiz-btn wiz-btn-back" data-i18n="back">&larr; Back</button>
+                <button id="btnSubmitEntry" class="wiz-btn wiz-btn-confirm" data-i18n="register_sample">Register Sample</button>
             </div>
         </div>
     </div>
@@ -124,14 +265,18 @@
         <div class="wizard-header">
             <span class="step-indicator" id="resultPatientName"></span>
             <h2 data-i18n="enter_results">Enter Results</h2>
-            <button onclick="closeResultModal()" class="wizard-close">&times;</button>
+            <button id="btnCloseResult" class="wizard-close">&times;</button>
         </div>
+        <div id="rejectionBanner" class="rejection-banner" style="display:none"></div>
         <div class="wizard-body">
             <div id="resultFields" class="result-fields"></div>
         </div>
-        <div class="wizard-footer">
-            <button onclick="closeResultModal()" class="wiz-btn wiz-btn-cancel" data-i18n="close">Close</button>
-            <button onclick="saveResults()" class="wiz-btn wiz-btn-confirm" data-i18n="save_results">Save Results</button>
+        <div class="wizard-footer" id="resultFooter">
+            <button id="btnCloseResultFooter" class="wiz-btn wiz-btn-cancel" data-i18n="close">Close</button>
+            <button id="btnSaveResults" class="wiz-btn wiz-btn-confirm" data-i18n="save_results">Save Results</button>
+        </div>
+        <div class="wizard-footer reject-footer" id="rejectFooter" style="display:none">
+            <button id="btnStartReject" class="wiz-btn reject-btn">Reject Sample</button>
         </div>
     </div>
 </div>

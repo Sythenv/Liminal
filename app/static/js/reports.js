@@ -9,6 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('reportMonth').value = month;
     document.getElementById('reportYear').value = year;
+
+    document.getElementById('btnGenerateReport').addEventListener('click', generateReport);
 });
 
 function generateReport() {
@@ -18,7 +20,7 @@ function generateReport() {
     document.getElementById('reportResult').style.display = 'none';
     document.getElementById('reportError').style.display = 'none';
 
-    fetch('/api/reports/monthly', {
+    authFetch('/api/reports/monthly', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ year: year, month: month })

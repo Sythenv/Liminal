@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Blood Bank</h2>
+
+<div class="tab-bar" id="bbTabs">
+    <button class="tab-btn active" data-tab="donors">Donors</button>
+    <button class="tab-btn" data-tab="stock">Stock</button>
+    <button class="tab-btn" data-tab="transfusions">Transfusions</button>
+</div>
+
+<!-- DONORS TAB -->
+<div class="tab-content" id="tab-donors">
+    <div class="card-list" id="donorList"></div>
+    <div id="donorEmpty" class="empty-state" style="display:none">
+        <p>No donors registered</p>
+    </div>
+</div>
+
+<!-- STOCK TAB -->
+<div class="tab-content" id="tab-stock" style="display:none">
+    <div class="card-list" id="unitList"></div>
+    <div id="unitEmpty" class="empty-state" style="display:none">
+        <p>No blood units in stock</p>
+    </div>
+</div>
+
+<!-- TRANSFUSIONS TAB -->
+<div class="tab-content" id="tab-transfusions" style="display:none">
+    <div class="card-list" id="transfusionList"></div>
+    <div id="trEmpty" class="empty-state" style="display:none">
+        <p>No transfusion records</p>
+    </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="bbFab" title="Add">
+    <span class="fab-icon">+</span>
+</button>
+
+<!-- MODAL -->
+<div id="bbModal" class="wizard-overlay" style="display:none">
+    <div class="wizard-container">
+        <div class="wizard-header">
+            <h2 id="bbModalTitle"></h2>
+            <button id="bbModalClose" class="wizard-close">&times;</button>
+        </div>
+        <div class="wizard-body" id="bbModalBody"></div>
+        <div class="wizard-footer" id="bbModalFooter"></div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/bloodbank.js"></script>
+{% endblock %}

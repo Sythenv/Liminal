@@ -9,8 +9,8 @@ from app.db import get_db
 
 bp = Blueprint('reports', __name__)
 
-# MSF branding
-MSF_RED = (215, 33, 30)
+# Branding colors
+PRIMARY_RED = (215, 33, 30)
 WHITE = (255, 255, 255)
 BLACK = (34, 34, 34)
 GRAY = (136, 136, 136)
@@ -32,7 +32,7 @@ def _collect_data(db, date_from, date_to):
     row = db.execute('''SELECT COUNT(*) as c FROM lab_result lr
         JOIN lab_register reg ON lr.register_id = reg.id
         WHERE reg.reception_date BETWEEN ? AND ?
-        AND reg.status != 'REJECTED' AND lr.result_status = 'RESULTED' ''',
+        AND reg.status != 'REJECTED' AND lr.result_status IN ('RESULTED', 'VALIDATED') ''',
         (date_from, date_to)).fetchone()
     data['total_tests'] = row['c']
 
@@ -50,7 +50,7 @@ def _collect_data(db, date_from, date_to):
         JOIN lab_register reg ON lr.register_id = reg.id
         JOIN test_definition td ON lr.test_id = td.id
         WHERE reg.reception_date BETWEEN ? AND ?
-        AND reg.status != 'REJECTED' AND lr.result_status = 'RESULTED'
+        AND reg.status != 'REJECTED' AND lr.result_status IN ('RESULTED', 'VALIDATED')
         GROUP BY td.category, td.name_en
         ORDER BY td.category, td.display_order''',
         (date_from, date_to)).fetchall()
@@ -67,7 +67,7 @@ def _collect_data(db, date_from, date_to):
         WHERE reg.reception_date BETWEEN ? AND ?
         AND reg.status != 'REJECTED'
         AND td.result_type = 'POSITIVE_NEGATIVE'
-        AND lr.result_status = 'RESULTED'
+        AND lr.result_status IN ('RESULTED', 'VALIDATED')
         GROUP BY td.id, td.name_en
         ORDER BY td.display_order''',
         (date_from, date_to)).fetchall()
@@ -101,7 +101,7 @@ def _collect_data(db, date_from, date_to):
 
 
 class LabReport(FPDF):
-    """MSF-branded lab report PDF."""
+    """Branded lab report PDF."""
 
     def __init__(self, site_name, period_label):
         super().__init__('P', 'mm', 'A4')
@@ -111,13 +111,13 @@ class LabReport(FPDF):
 
     def header(self):
         # Red bar
-        self.set_fill_color(*MSF_RED)
+        self.set_fill_color(*PRIMARY_RED)
         self.rect(0, 0, 210, 16, 'F')
-        # MSF text
+        # Site text
         self.set_font('Helvetica', 'B', 14)
         self.set_text_color(*WHITE)
         self.set_xy(10, 3)
-        self.cell(20, 10, 'MSF', 0, 0)
+        self.cell(20, 10, 'LAB', 0, 0)
         # Site name
         self.set_font('Helvetica', '', 10)
         self.cell(0, 10, f'  {self.site_name}', 0, 0)
@@ -132,11 +132,11 @@ class LabReport(FPDF):
         self.set_y(-15)
         self.set_font('Helvetica', '', 8)
         self.set_text_color(*GRAY)
-        self.cell(0, 10, f'MSF Laboratory Monthly Report - {self.site_name} - Page {self.page_no()}', 0, 0, 'C')
+        self.cell(0, 10, f'Laboratory Monthly Report - {self.site_name} - Page {self.page_no()}', 0, 0, 'C')
 
     def section_title(self, title):
         self.set_font('Helvetica', 'B', 12)
-        self.set_text_color(*MSF_RED)
+        self.set_text_color(*PRIMARY_RED)
         self.cell(0, 10, title, 0, 1)
         self.set_text_color(*BLACK)
 
@@ -152,7 +152,7 @@ class LabReport(FPDF):
             self.set_fill_color(*LIGHT_GRAY)
             self.rect(x, y, box_w, 28, 'F')
             # Border left accent
-            self.set_fill_color(*MSF_RED)
+            self.set_fill_color(*PRIMARY_RED)
             self.rect(x, y, 2, 28, 'F')
             # Value
             self.set_font('Helvetica', 'B', 22)
@@ -169,13 +169,13 @@ class LabReport(FPDF):
         self.set_text_color(*BLACK)
 
     def draw_table(self, headers, rows, col_widths=None):
-        """Draw a table with MSF-styled headers."""
+        """Draw a table with styled headers."""
         if col_widths is None:
             col_widths = [190 / len(headers)] * len(headers)
 
         # Header
         self.set_font('Helvetica', 'B', 9)
-        self.set_fill_color(*MSF_RED)
+        self.set_fill_color(*PRIMARY_RED)
         self.set_text_color(*WHITE)
         for i, h in enumerate(headers):
             self.cell(col_widths[i], 8, h, 1, 0, 'C', True)
@@ -190,7 +190,7 @@ class LabReport(FPDF):
                 self.add_page()
                 # Reprint headers
                 self.set_font('Helvetica', 'B', 9)
-                self.set_fill_color(*MSF_RED)
+                self.set_fill_color(*PRIMARY_RED)
                 self.set_text_color(*WHITE)
                 for i, h in enumerate(headers):
                     self.cell(col_widths[i], 8, h, 1, 0, 'C', True)
@@ -234,7 +234,7 @@ class LabReport(FPDF):
             self.cell(label_width, bar_height, str(label), 0, 0, 'R')
             # Bar
             bar_w = (value / max_val) * max_width if max_val > 0 else 0
-            self.set_fill_color(*MSF_RED)
+            self.set_fill_color(*PRIMARY_RED)
             self.rect(10 + label_width + 3, y + 1, bar_w, bar_height - 2, 'F')
             # Value
             self.set_text_color(*BLACK)
@@ -361,7 +361,7 @@ def monthly_report():
 
     # Get site info
     site = db.execute('SELECT * FROM site_config WHERE id = 1').fetchone()
-    site_name = site['site_name'] if site else 'MSF Laboratory'
+    site_name = site['site_name'] if site else 'Laboratory'
     site_code = site['site_code'] if site else 'LAB'
 
     # Collect data

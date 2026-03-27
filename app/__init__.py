@@ -1,4 +1,4 @@
-"""MSF Laboratory Registration System - App Factory."""
+"""Laboratory Registration System - App Factory."""
 
 import os
 import json
@@ -14,7 +14,7 @@ def create_app(config_path=None):
     with open(config_path, 'r') as f:
         site_config = json.load(f)
 
-    app.config['SITE_NAME'] = site_config.get('site_name', 'MSF Laboratory')
+    app.config['SITE_NAME'] = site_config.get('site_name', 'Laboratory')
     app.config['SITE_CODE'] = site_config.get('site_code', 'LAB')
     app.config['COUNTRY'] = site_config.get('country', 'SSD')
     app.config['DEFAULT_LANGUAGE'] = site_config.get('default_language', 'en')
@@ -45,6 +45,15 @@ def create_app(config_path=None):
     app.register_blueprint(export_bp, url_prefix='/api/export')
     app.register_blueprint(config_bp, url_prefix='/api/config')
     app.register_blueprint(reports_bp, url_prefix='/api/reports')
+
+    from .api.bloodbank import bp as bloodbank_bp
+    from .api.equipment import bp as equipment_bp
+    app.register_blueprint(bloodbank_bp, url_prefix='/api/bloodbank')
+    app.register_blueprint(equipment_bp, url_prefix='/api/equipment')
+
+    from .auth import bp as auth_bp, auth_middleware
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.before_request(auth_middleware)
 
     # Page routes
     from .pages import bp as pages_bp

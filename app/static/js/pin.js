@@ -1,0 +1,365 @@
+/* PIN-based auth UI — numpad overlay, per-action verification only.
+   No login screen. No nav filtering. PIN is prompted only when a protected action is triggered. */
+
+let currentPin = null;
+let currentLevel = 0;
+let currentOperatorName = null;
+let pinCallback = null;
+let setupMode = false;
+let setupStep = 0;
+let setupData = {};
+
+// ===== NUMPAD OVERLAY =====
+
+function showNumpad(callback, message) {
+    pinCallback = callback;
+    const overlay = document.getElementById('pinOverlay');
+    const dots = document.getElementById('pinDots');
+    const msg = document.getElementById('pinMessage');
+    const err = document.getElementById('pinError');
+
+    dots.textContent = '';
+    err.style.display = 'none';
+    msg.textContent = message || 'Enter your PIN';
+    overlay.style.display = 'flex';
+    overlay.dataset.pin = '';
+    shuffleNumpad();
+}
+
+function shuffleNumpad() {
+    const grid = document.querySelector('.pin-grid');
+    const digitKeys = Array.from(grid.querySelectorAll('.pin-key')).filter(
+        k => k.dataset.key !== 'back' && k.dataset.key !== 'ok'
+    );
+    const values = digitKeys.map(k => k.dataset.key);
+    for (let i = values.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [values[i], values[j]] = [values[j], values[i]];
+    }
+    digitKeys.forEach((k, i) => {
+        k.dataset.key = values[i];
+        k.textContent = values[i];
+    });
+}
+
+function hideNumpad() {
+    document.getElementById('pinOverlay').style.display = 'none';
+    document.getElementById('pinOverlay').dataset.pin = '';
+}
+
+function pinKeyPress(key) {
+    const overlay = document.getElementById('pinOverlay');
+    let pin = overlay.dataset.pin || '';
+    const dots = document.getElementById('pinDots');
+    const err = document.getElementById('pinError');
+
+    err.style.display = 'none';
+
+    if (key === 'back') {
+        pin = pin.slice(0, -1);
+    } else if (key === 'ok') {
+        if (pin.length < 4) return;
+        if (setupMode) {
+            handleSetupPin(pin);
+            return;
+        }
+        verifyPin(pin);
+        return;
+    } else if (pin.length < 8) {
+        pin += key;
+    }
+
+    overlay.dataset.pin = pin;
+    dots.textContent = '\u25cf '.repeat(pin.length).trim();
+}
+
+const DURESS_PINS = ['0000','1111','2222','3333','4444','5555','6666','7777','8888','9999','1234','4321','0123','1230','9876','6789'];
+
+function verifyPin(pin) {
+    if (DURESS_PINS.includes(pin)) {
+        hideNumpad();
+        showDuressScreen();
+        return;
+    }
+    fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: pin })
+    })
+    .then(r => r.json().then(data => ({ status: r.status, data })))
+    .then(({ status, data }) => {
+        if (status === 200) {
+            currentPin = pin;
+            currentLevel = data.level;
+            currentOperatorName = data.name;
+            hideNumpad();
+            if (pinCallback) {
+                pinCallback(pin);
+                pinCallback = null;
+            }
+        } else {
+            showPinError(data.error || 'Invalid PIN');
+        }
+    });
+}
+
+function showPinError(message) {
+    const err = document.getElementById('pinError');
+    err.textContent = message;
+    err.style.display = 'block';
+    document.getElementById('pinOverlay').dataset.pin = '';
+    document.getElementById('pinDots').textContent = '';
+    const pad = document.getElementById('pinPad');
+    pad.classList.add('shake');
+    setTimeout(() => pad.classList.remove('shake'), 500);
+}
+
+// ===== PIN PROTECT WRAPPER =====
+
+function pinProtect(callback) {
+    showNumpad(pin => {
+        currentPin = pin;
+        callback(pin);
+    });
+}
+
+// ===== AUTH FETCH WRAPPER =====
+
+function authFetch(url, options) {
+    options = options || {};
+    return new Promise((resolve) => {
+        const doFetch = (pin) => {
+            options.headers = options.headers || {};
+            options.headers['X-Operator-Pin'] = pin;
+            fetch(url, options).then(r => {
+                if (r.status === 401 || r.status === 403) {
+                    r.json().then(data => {
+                        showNumpad(doFetch, data.error || 'Authentication required');
+                    });
+                } else {
+                    resolve(r);
+                }
+            });
+        };
+
+        // Always prompt for PIN on protected actions
+        showNumpad(doFetch);
+    });
+}
+
+// ===== FIRST-RUN SETUP =====
+
+function showSetupScreen() {
+    setupMode = true;
+    setupStep = 1;
+    setupData = {};
+    const overlay = document.getElementById('pinOverlay');
+    const msg = document.getElementById('pinMessage');
+    const setupFields = document.getElementById('setupFields');
+
+    setupFields.style.display = 'block';
+    msg.textContent = 'Choose your admin PIN';
+    overlay.style.display = 'flex';
+    overlay.dataset.pin = '';
+    document.getElementById('pinDots').textContent = '';
+}
+
+function handleSetupPin(pin) {
+    if (setupStep === 1) {
+        setupData.pin = pin;
+        setupStep = 2;
+        document.getElementById('pinMessage').textContent = 'Confirm PIN';
+        document.getElementById('pinOverlay').dataset.pin = '';
+        document.getElementById('pinDots').textContent = '';
+    } else if (setupStep === 2) {
+        if (pin !== setupData.pin) {
+            showPinError('PINs do not match');
+            setupStep = 1;
+            document.getElementById('pinMessage').textContent = 'Choose your admin PIN';
+            return;
+        }
+        const nameInput = document.getElementById('setupName');
+        const name = nameInput ? nameInput.value.trim() : '';
+        if (!name) {
+            showPinError('Enter your name first');
+            setupStep = 1;
+            document.getElementById('pinMessage').textContent = 'Choose your admin PIN';
+            return;
+        }
+
+        fetch('/api/auth/setup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name, pin: pin })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                setupMode = false;
+                document.getElementById('setupFields').style.display = 'none';
+                currentPin = pin;
+                currentLevel = 3;
+                currentOperatorName = name;
+                hideNumpad();
+            } else {
+                showPinError(data.error || 'Setup failed');
+            }
+        });
+    }
+}
+
+// ===== DURESS MODE =====
+
+function showDuressScreen() {
+    const fakeNames = [
+        'Jean Mukiza','Amina Diallo','Pierre Habimana','Fatou Keita','Joseph Ndayisaba',
+        'Marie Uwimana','Ibrahim Sow','Grace Akello','Paul Nzeyimana','Aisha Bah',
+        'Emmanuel Kabera','Claudine Mukamana','Hassan Traore','Rose Ingabire','David Ochieng',
+        'Adama Camara','Felix Mugisha','Jeanne Iradukunda','Moussa Diop','Alice Nyirahabimana',
+    ];
+    const fakeTests = ['MAL_RDT','CBC','HIV','URINE','BG_RH','WIDAL','HBV','HCV'];
+    const fakeResultMap = {
+        'MAL_RDT': ['NEG','NEG','NEG','NEG','POS'],
+        'HIV': ['NEG','NEG','NEG','NEG','NEG','NEG','POS'],
+        'HBV': ['NEG','NEG','NEG','NEG','POS'],
+        'HCV': ['NEG','NEG','NEG','NEG','NEG','POS'],
+        'WIDAL': ['NEG','NEG','POS 1/80','POS 1/160'],
+        'BG_RH': ['O+','O+','A+','B+','AB+','O-','A-'],
+        'CBC': ['WBC:6.2 PLT:220 HCT:38','WBC:4.8 PLT:180 HCT:42','WBC:11.3 PLT:95 HCT:28'],
+        'URINE': ['LEU:NEG NIT:NEG','LEU:+ NIT:NEG','LEU:NEG NIT:+'],
+    };
+    const fakeStatuses = ['completed','completed','review','completed','in_progress','completed','registered','completed'];
+    const fakeWards = ['OPD','IPD','PED','ER','MATER','ICU'];
+
+    const rnd = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    const rndAge = () => Math.floor(Math.random() * 65) + 1;
+    const rndSex = () => Math.random() > 0.5 ? 'M' : 'F';
+    const rndDate = () => { const d = new Date(); d.setDate(d.getDate() - Math.floor(Math.random() * 30)); return d.toISOString().split('T')[0]; };
+    const rndTime = () => `${String(7 + Math.floor(Math.random() * 10)).padStart(2,'0')}:${String(Math.floor(Math.random() * 60)).padStart(2,'0')}`;
+    const rndLabNum = () => `LAB-2026-${String(Math.floor(Math.random() * 9000) + 1000).padStart(4,'0')}`;
+
+    // Build fake page in same theme
+    const overlay = document.getElementById('pinOverlay');
+    if (overlay) overlay.style.display = 'none';
+
+    const main = document.querySelector('.content') || document.querySelector('main');
+    const landing = document.getElementById('landingMode');
+    if (landing) landing.style.display = 'none';
+
+    const header = document.getElementById('appHeader');
+    const nav = document.getElementById('appNav');
+    if (header) header.style.display = '';
+    if (nav) { nav.style.display = ''; nav.querySelectorAll('.nav-locked').forEach(l => l.classList.add('unlocked')); }
+
+    // Build fake register view
+    const fake = document.createElement('div');
+    fake.style.cssText = 'max-width:700px;margin:0 auto;padding:0 16px 80px';
+
+    // Day header
+    const dayH = document.createElement('div');
+    dayH.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:20px;padding:16px 0';
+    const today = new Date().toISOString().split('T')[0];
+    dayH.innerHTML = `<span style="font-size:22px;font-weight:700">${today}</span><span style="font-size:13px;color:#999">18 sample(s)</span>`;
+    fake.appendChild(dayH);
+
+    // Fake cards
+    for (let i = 0; i < 18; i++) {
+        const card = document.createElement('div');
+        const st = rnd(fakeStatuses);
+        card.className = 'sample-card status-' + st;
+
+        const name = rnd(fakeNames);
+        const labN = rndLabNum();
+        const age = rndAge();
+        const sex = rndSex();
+        const ward = rnd(fakeWards);
+        const tests = [];
+        const nTests = 1 + Math.floor(Math.random() * 3);
+        for (let j = 0; j < nTests; j++) {
+            const t = rnd(fakeTests);
+            if (!tests.includes(t)) tests.push(t);
+        }
+
+        let html = `<div class="card-top"><span class="card-lab-number">${labN}</span><span class="card-status ${st}">${st.replace('_',' ')}</span></div>`;
+        html += `<div class="card-patient">${name}</div>`;
+        html += `<div class="card-details">${age}Y · ${sex} · ${ward}</div>`;
+        html += `<div class="card-tests">`;
+        tests.forEach(t => {
+            const v = (st === 'completed' || st === 'review') ? rnd(fakeResultMap[t] || ['NEG']) : '';
+            const cls = (v && (v.startsWith('POS') || v === '+')) ? 'card-test-badge result-positive' : (v ? 'card-test-badge has-result' : 'card-test-badge');
+            html += `<span class="${cls}">${t}${v ? ': ' + v : ''}</span>`;
+        });
+        html += `</div>`;
+
+        card.innerHTML = html;
+        fake.appendChild(card);
+    }
+
+    main.innerHTML = '';
+    main.appendChild(fake);
+
+    // Dark mode — subtle signal for legitimate operator
+    document.body.style.background = '#1a1a1a';
+    document.body.style.color = '#ccc';
+    if (header) header.style.cssText += ';background:#222;border-color:#333';
+    if (nav) nav.style.cssText += ';background:#222;border-color:#333';
+    nav.querySelectorAll('.nav-link').forEach(l => l.style.color = '#aaa');
+    fake.querySelectorAll('.sample-card').forEach(c => { c.style.background = '#2a2a2a'; c.style.borderColor = '#333'; });
+    fake.querySelectorAll('.card-patient').forEach(c => c.style.color = '#ddd');
+    fake.querySelectorAll('.card-details').forEach(c => c.style.color = '#888');
+    fake.querySelectorAll('.card-lab-number').forEach(c => c.style.color = '#999');
+}
+
+// ===== NAV UNLOCK =====
+
+function unlockNav() {
+    showNumpad(pin => {
+        currentPin = pin;
+        applyNavUnlock();
+    }, 'Enter PIN to unlock');
+}
+
+function applyNavUnlock() {
+    const btn = document.getElementById('navUnlockBtn');
+    document.querySelectorAll('.nav-locked').forEach(link => {
+        const required = parseInt(link.dataset.unlock);
+        if (currentLevel >= required) {
+            link.classList.add('unlocked');
+        }
+    });
+    if (btn && currentOperatorName) {
+        btn.textContent = '\u{1F513} ' + currentOperatorName;
+        btn.classList.add('active');
+    }
+    document.dispatchEvent(new CustomEvent('navUnlocked', { detail: { level: currentLevel } }));
+}
+
+// ===== INIT =====
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Wire numpad buttons
+    document.querySelectorAll('.pin-key').forEach(btn => {
+        btn.addEventListener('click', () => pinKeyPress(btn.dataset.key));
+    });
+
+    // Wire nav unlock button
+    const unlockBtn = document.getElementById('navUnlockBtn');
+    if (unlockBtn) {
+        unlockBtn.addEventListener('click', unlockNav);
+    }
+
+    // Check if first-run setup is needed (no operators exist)
+    fetch('/api/auth/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+    }).then(r => {
+        if (r.status === 400) {
+            r.json().then(data => {
+                if (data.error === 'name is required') {
+                    showSetupScreen();
+                }
+            });
+        }
+    }).catch(() => {});
+});

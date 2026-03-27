@@ -9,8 +9,36 @@ from app.db import get_db
 
 bp = Blueprint('export', __name__)
 
+# Structured test sub-fields for readable export
+STRUCTURED_FIELDS = {
+    'CBC': ['WBC', 'PLT', 'HCT'],
+    'MAL_BS': ['species', 'density'],
+    'URINE': ['LEU', 'NIT', 'PRO', 'BLD', 'GLU'],
+}
+
+
+def format_result_value(code, raw_value):
+    """Format a result value for export. Parse JSON for structured tests."""
+    if not raw_value:
+        return raw_value
+    if code not in STRUCTURED_FIELDS:
+        return raw_value
+    try:
+        parsed = json.loads(raw_value)
+        if not isinstance(parsed, dict):
+            return raw_value
+        parts = []
+        for key in STRUCTURED_FIELDS[code]:
+            val = parsed.get(key, '')
+            if val:
+                parts.append(f'{key}:{val}')
+        return ' '.join(parts) if parts else raw_value
+    except (json.JSONDecodeError, TypeError):
+        return raw_value
+
 
 @bp.route('/excel', methods=['POST'])
+
 def export_excel():
     """Generate Excel export of register data."""
     try:
@@ -73,7 +101,8 @@ def export_excel():
 
         for test in tests:
             r = result_map.get(test['code'])
-            val = r['result_value'] if r and r['result_value'] else ''
+            raw_val = r['result_value'] if r and r['result_value'] else ''
+            val = format_result_value(test['code'], raw_val)
             fmt = pos_fmt if val and val.upper() in ('POS', 'POSITIVE', '+') else cell_fmt
             ws.write(row_idx, col, val, fmt)
             col += 1
@@ -98,6 +127,7 @@ def export_excel():
 
 
 @bp.route('/csv', methods=['POST'])
+
 def export_csv():
     """Generate CSV export."""
     db = get_db()
@@ -134,7 +164,8 @@ def export_csv():
                    entry['sex'], entry['ward']]
             for test in tests:
                 r = result_map.get(test['code'])
-                row.append(r['result_value'] if r and r['result_value'] else '')
+                raw_val = r['result_value'] if r and r['result_value'] else ''
+                row.append(format_result_value(test['code'], raw_val))
             row += [entry['reporting_date'], entry['technician_initials'],
                     entry['status'], entry['remarks']]
             writer.writerow(row)
@@ -143,6 +174,7 @@ def export_csv():
 
 
 @bp.route('/download/<filename>', methods=['GET'])
+
 def download(filename):
     """Serve an export file for download."""
     # Security: prevent path traversal

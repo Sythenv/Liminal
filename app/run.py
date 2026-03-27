@@ -1,4 +1,4 @@
-"""Entry point for MSF Laboratory Registration System."""
+"""Entry point for Laboratory Registration System."""
 
 from app import create_app
 
@@ -10,8 +10,8 @@ if __name__ == '__main__':
 
     try:
         from waitress import serve
-        print(f'\n  MSF Lab Register running at http://{host}:{port}\n')
+        print(f'\n  Lab Register running at http://{host}:{port}\n')
         serve(app, host=host, port=port)
     except ImportError:
-        print(f'\n  MSF Lab Register running at http://{host}:{port} (dev mode)\n')
+        print(f'\n  Lab Register running at http://{host}:{port} (dev mode)\n')
         app.run(host=host, port=port, debug=app.config.get('DEBUG', False))

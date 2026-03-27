@@ -3,28 +3,70 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{{ site_name }} - MSF Lab Register</title>
+<title>{{ site_name }} - Lab Register</title>
 <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
 
-<header class="msf-header">
-    <div class="msf-brand">
-        <span class="msf-logo">MSF</span>
-        <span class="msf-title">{{ site_name }}</span>
+<header class="app-header" id="appHeader" {% block header_style %}{% endblock %}>
+    <div class="app-brand">
+        <img src="/static/img/logo.svg" alt="Logo" class="app-logo-img" id="appLogoImg">
+        <span class="app-logo" id="appLogoText" style="display:none">LAB</span>
+        <span class="app-title">{{ site_name }}</span>
     </div>
-    <nav class="msf-nav">
-        <a href="/register" class="nav-link" data-i18n="nav_register">Register</a>
-        <a href="/reports" class="nav-link" data-i18n="nav_reports">Reports</a>
-        <a href="/export" class="nav-link" data-i18n="nav_export">Export</a>
-        <a href="/settings" class="nav-link" data-i18n="nav_settings">Settings</a>
-    </nav>
+    <div class="header-right">
+        <div class="lang-switcher" id="langSwitcher">
+            <button class="lang-btn" data-lang="en">EN</button>
+            <button class="lang-btn" data-lang="fr">FR</button>
+            <button class="lang-btn" data-lang="ar">عر</button>
+        </div>
+    </div>
 </header>
+
+<nav class="app-nav" id="appNav" {% block nav_style %}{% endblock %}>
+    <a href="/register" class="nav-link" data-i18n="nav_register">Register</a>
+    <a href="/equipment" class="nav-link" data-i18n="nav_equipment">Equipment</a>
+    <a href="/reports" class="nav-link" data-i18n="nav_reports">Reports</a>
+    <a href="/patients" class="nav-link nav-locked" data-unlock="2" data-i18n="nav_patients">Patients</a>
+    <a href="/bloodbank" class="nav-link nav-locked" data-unlock="2" data-i18n="nav_bloodbank">Blood Bank</a>
+    <a href="/export" class="nav-link nav-locked" data-unlock="2" data-i18n="nav_export">Export</a>
+    <button class="nav-unlock-btn" id="navUnlockBtn">&#128274;</button>
+</nav>
 
 <main class="content">
     {% block content %}{% endblock %}
 </main>
 
+<!-- PIN NUMPAD OVERLAY -->
+<div id="pinOverlay" class="pin-overlay" style="display:none" data-pin="">
+    <img src="/static/img/logo.svg" alt="" class="pin-logo">
+    <div class="pin-container" id="pinPad">
+        <div id="setupFields" class="setup-fields" style="display:none">
+            <label>Your Name</label>
+            <input type="text" id="setupName" class="big-input" placeholder="Admin name">
+        </div>
+        <div class="pin-message" id="pinMessage">Enter your PIN</div>
+        <div class="pin-dots" id="pinDots"></div>
+        <div class="pin-error" id="pinError" style="display:none"></div>
+        <div class="pin-grid">
+            <button class="pin-key" data-key="1">1</button>
+            <button class="pin-key" data-key="2">2</button>
+            <button class="pin-key" data-key="3">3</button>
+            <button class="pin-key" data-key="4">4</button>
+            <button class="pin-key" data-key="5">5</button>
+            <button class="pin-key" data-key="6">6</button>
+            <button class="pin-key" data-key="7">7</button>
+            <button class="pin-key" data-key="8">8</button>
+            <button class="pin-key" data-key="9">9</button>
+            <button class="pin-key pin-key-back" data-key="back">&#9003;</button>
+            <button class="pin-key" data-key="0">0</button>
+            <button class="pin-key pin-key-ok" data-key="ok">&#10003;</button>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/components.js"></script>
+<script src="/static/js/pin.js"></script>
 <script src="/static/js/i18n.js"></script>
 {% block scripts %}{% endblock %}
 

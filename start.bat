@@ -1,7 +1,7 @@
 @echo off
-title MSF Lab Register
+title Lab Register
 echo ==========================================
-echo   MSF Laboratory Registration System
+echo   Laboratory Registration System
 echo   Starting... please wait
 echo ==========================================
 echo.

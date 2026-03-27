@@ -1,0 +1,333 @@
+"""Centralized auth engine — PIN verification + route-level access control.
+
+How it works:
+- ROUTE_LEVELS defines the required level for each (method, path) pair
+- A single before_request middleware resolves the operator from X-Operator-Pin header
+- If the route requires a level, the middleware enforces it
+- Endpoints read g.operator without caring about auth logic
+- Four-eyes rule is enforced in the validate endpoint via audit_log check
+
+No decorators on endpoints. No auth imports in API modules (except get_current_operator_name).
+"""
+
+import os
+import re
+import hashlib
+from flask import Blueprint, request, jsonify, g
+from app.db import get_db
+
+bp = Blueprint('auth', __name__)
+
+
+# ===== ROUTE ACCESS TABLE =====
+# (method, path_pattern) → minimum level required
+# Patterns use * as wildcard for path segments
+# Routes not listed here: no auth required (public)
+
+ROUTE_LEVELS = {
+    # Register — Level 1 (operator)
+    ('POST', '/api/register/entries'):              1,
+    ('POST', '/api/register/entries/*/results'):    1,
+    ('POST', '/api/register/entries/*/reject'):     1,
+    ('PUT',  '/api/register/entries/*'):            3,
+    ('DELETE', '/api/register/entries/*'):           3,
+
+    # Register — Level 2 (supervisor)
+    ('POST', '/api/register/entries/*/validate'):   2,
+    ('POST', '/api/register/entries/*/unreject'):    2,
+    ('GET',  '/api/register/entries/*/audit'):       2,
+
+    # Patients — search is public (no rule), create is level 1, list/detail is level 2
+    ('POST', '/api/patients'):                      1,
+    ('GET',  '/api/patients'):                      2,
+    ('PUT',  '/api/patients/*'):                    2,
+
+    # Blood Bank — Level 3 for donors/units, Level 2 for transfusions
+    ('GET',  '/api/bloodbank/donors'):              3,
+    ('POST', '/api/bloodbank/donors'):              3,
+    ('GET',  '/api/bloodbank/units'):               2,
+    ('POST', '/api/bloodbank/units'):               3,
+    ('PUT',  '/api/bloodbank/units/*'):             3,
+    ('GET',  '/api/bloodbank/transfusions'):        2,
+    ('POST', '/api/bloodbank/transfusions'):        2,
+    ('PUT',  '/api/bloodbank/transfusions/*'):      2,
+
+    # Equipment — Level 3 for create/edit, Level 1 for maintenance log
+    ('POST', '/api/equipment'):                     3,
+    ('PUT',  '/api/equipment/*'):                   3,
+    ('POST', '/api/equipment/*/maintenance'):       1,
+
+    # Reports — Level 2
+    ('POST', '/api/reports/monthly'):               2,
+
+    # Export — Level 2
+    ('POST', '/api/export/excel'):                  2,
+    ('POST', '/api/export/csv'):                    2,
+    ('GET',  '/api/export/download/*'):             2,
+
+    # Auth — Level 3 for operator management
+    ('GET',  '/api/auth/operators'):                3,
+    ('POST', '/api/auth/operators'):                3,
+    ('PUT',  '/api/auth/operators/*'):              3,
+    ('DELETE', '/api/auth/operators/*'):             3,
+}
+
+# Paths that skip auth entirely (no PIN needed, no level check)
+SKIP_AUTH = {
+    '/api/auth/setup',
+    '/api/auth/verify',
+}
+
+# Prefixes that skip auth (HTML pages, static files)
+SKIP_PREFIXES = ('/static/', '/register', '/patients', '/reports',
+                 '/bloodbank', '/equipment', '/export')
+
+
+def _match_route(method, path):
+    """Find the required level for a (method, path) pair. Returns None if no rule matches."""
+    for (rule_method, rule_pattern), level in ROUTE_LEVELS.items():
+        if method != rule_method:
+            continue
+        # Convert pattern to regex: * matches one path segment
+        regex = '^' + rule_pattern.replace('*', '[^/]+') + '$'
+        if re.match(regex, path):
+            return level
+    return None
+
+
+# ===== PIN HELPERS =====
+
+def generate_salt():
+    return os.urandom(16).hex()
+
+
+def hash_pin(pin, salt):
+    return hashlib.sha256((str(pin) + salt).encode('utf-8')).hexdigest()
+
+
+def verify_pin(pin, operator_row):
+    expected = hash_pin(pin, operator_row['pin_salt'])
+    return expected == operator_row['pin_hash']
+
+
+def get_operator_by_pin(db, pin):
+    operators = db.execute('SELECT * FROM operator WHERE is_active = 1').fetchall()
+    for op in operators:
+        if verify_pin(pin, op):
+            return op
+    return None
+
+
+def get_current_operator_name():
+    """Get the name of the authenticated operator, or 'SYSTEM' if none."""
+    op = getattr(g, 'operator', None)
+    return op['name'] if op else 'SYSTEM'
+
+
+# ===== MIDDLEWARE =====
+
+def auth_middleware():
+    """Single before_request hook that handles ALL auth logic."""
+    path = request.path
+    method = request.method
+
+    # Skip auth for specific paths
+    if path in SKIP_AUTH or path == '/':
+        return None
+    for prefix in SKIP_PREFIXES:
+        if path.startswith(prefix):
+            return None
+
+    # Find required level for this route
+    required_level = _match_route(method, path)
+
+    # No rule = public endpoint (GET /api/config/tests, GET /api/register/entries, etc.)
+    if required_level is None:
+        g.operator = None
+        return None
+
+    # Route requires auth — check for operators first
+    db = get_db()
+    count = db.execute('SELECT COUNT(*) as c FROM operator').fetchone()['c']
+    if count == 0:
+        # No operators yet (first-run) — allow everything
+        g.operator = None
+        return None
+
+    # Check PIN header
+    pin = request.headers.get('X-Operator-Pin')
+    if not pin:
+        return jsonify({'error': 'Authentication required', 'required_level': required_level}), 401
+
+    operator = get_operator_by_pin(db, pin)
+    if not operator:
+        return jsonify({'error': 'Invalid PIN'}), 401
+
+    if operator['level'] < required_level:
+        return jsonify({'error': f'Level {required_level} required, you are level {operator["level"]}'}), 403
+
+    g.operator = dict(operator)
+    return None
+
+
+# ===== FOUR-EYES CHECK (called from validate endpoint) =====
+
+def check_four_eyes(db, entry_id, current_operator_name):
+    """Returns error message if four-eyes rule is violated, None if OK."""
+    # Skip four-eyes if no operators configured or operator is SYSTEM (first-run/tests)
+    if current_operator_name == 'SYSTEM':
+        return None
+    last_result = db.execute('''SELECT operator FROM audit_log
+        WHERE table_name = 'lab_register' AND record_id = ? AND action = 'RESULT'
+        ORDER BY id DESC LIMIT 1''', (entry_id,)).fetchone()
+    if last_result and last_result['operator'] == current_operator_name:
+        return 'Cannot validate your own results (four-eyes rule)'
+    return None
+
+
+# ===== AUTH API ENDPOINTS =====
+
+@bp.route('/setup', methods=['POST'])
+def setup():
+    """First-run: create admin operator. Fails if any operator exists."""
+    db = get_db()
+    count = db.execute('SELECT COUNT(*) as c FROM operator').fetchone()['c']
+    if count > 0:
+        return jsonify({'error': 'Setup already completed'}), 400
+
+    data = request.get_json()
+    name = (data.get('name') or '').strip()
+    pin = str(data.get('pin', ''))
+
+    if not name:
+        return jsonify({'error': 'name is required'}), 400
+    if len(pin) < 4 or len(pin) > 8 or not pin.isdigit():
+        return jsonify({'error': 'PIN must be 4-8 digits'}), 400
+
+    salt = generate_salt()
+    pin_h = hash_pin(pin, salt)
+
+    db.execute('INSERT INTO operator (name, pin_hash, pin_salt, level) VALUES (?, ?, ?, 3)',
+               (name, pin_h, salt))
+    db.commit()
+
+    return jsonify({'ok': True, 'message': f'Admin operator "{name}" created'}), 201
+
+
+@bp.route('/verify', methods=['POST'])
+def verify():
+    """Verify a PIN and return operator info."""
+    data = request.get_json()
+    pin = str(data.get('pin', ''))
+
+    db = get_db()
+    operator = get_operator_by_pin(db, pin)
+    if not operator:
+        return jsonify({'error': 'Invalid PIN'}), 401
+
+    return jsonify({
+        'id': operator['id'],
+        'name': operator['name'],
+        'level': operator['level']
+    })
+
+
+@bp.route('/operators', methods=['GET'])
+def list_operators():
+    """List all operators (admin only — enforced by ROUTE_LEVELS)."""
+    db = get_db()
+    operators = db.execute(
+        'SELECT id, name, level, is_active, created_at FROM operator ORDER BY level DESC, name ASC'
+    ).fetchall()
+    return jsonify([dict(op) for op in operators])
+
+
+@bp.route('/operators', methods=['POST'])
+def create_operator():
+    """Create a new operator (admin only)."""
+    db = get_db()
+    data = request.get_json()
+
+    name = (data.get('name') or '').strip()
+    pin = str(data.get('pin', ''))
+    level = data.get('level', 1)
+
+    if not name:
+        return jsonify({'error': 'name is required'}), 400
+    if len(pin) < 4 or len(pin) > 8 or not pin.isdigit():
+        return jsonify({'error': 'PIN must be 4-8 digits'}), 400
+    if level not in (1, 2, 3):
+        return jsonify({'error': 'Invalid level'}), 400
+
+    salt = generate_salt()
+    pin_h = hash_pin(pin, salt)
+
+    db.execute('INSERT INTO operator (name, pin_hash, pin_salt, level) VALUES (?, ?, ?, ?)',
+               (name, pin_h, salt, level))
+    db.commit()
+
+    op_id = db.execute('SELECT last_insert_rowid()').fetchone()[0]
+    from app.audit import log_action
+    log_action(db, 'CREATE', 'operator', op_id,
+               [('name', None, name), ('level', None, str(level))],
+               get_current_operator_name())
+    db.commit()
+
+    return jsonify({'id': op_id, 'name': name, 'level': level}), 201
+
+
+@bp.route('/operators/<int:op_id>', methods=['PUT'])
+def update_operator(op_id):
+    """Update an operator (admin only)."""
+    db = get_db()
+    data = request.get_json()
+
+    current = db.execute('SELECT * FROM operator WHERE id = ?', (op_id,)).fetchone()
+    if not current:
+        return jsonify({'error': 'Operator not found'}), 404
+
+    changes = []
+
+    if 'name' in data:
+        changes.append(('name', current['name'], data['name']))
+        db.execute('UPDATE operator SET name = ? WHERE id = ?', (data['name'], op_id))
+
+    if 'level' in data:
+        if data['level'] not in (1, 2, 3):
+            return jsonify({'error': 'Invalid level'}), 400
+        changes.append(('level', str(current['level']), str(data['level'])))
+        db.execute('UPDATE operator SET level = ? WHERE id = ?', (data['level'], op_id))
+
+    if 'is_active' in data:
+        changes.append(('is_active', str(current['is_active']), str(data['is_active'])))
+        db.execute('UPDATE operator SET is_active = ? WHERE id = ?', (data['is_active'], op_id))
+
+    if 'pin' in data:
+        new_pin = str(data['pin'])
+        if len(new_pin) < 4 or len(new_pin) > 8 or not new_pin.isdigit():
+            return jsonify({'error': 'PIN must be 4-8 digits'}), 400
+        salt = generate_salt()
+        pin_h = hash_pin(new_pin, salt)
+        db.execute('UPDATE operator SET pin_hash = ?, pin_salt = ? WHERE id = ?', (pin_h, salt, op_id))
+        changes.append(('pin', '***', '***'))
+
+    if changes:
+        from app.audit import log_action
+        log_action(db, 'UPDATE', 'operator', op_id, changes, get_current_operator_name())
+
+    db.commit()
+    op = db.execute('SELECT id, name, level, is_active, created_at FROM operator WHERE id = ?',
+                    (op_id,)).fetchone()
+    return jsonify(dict(op))
+
+
+@bp.route('/operators/<int:op_id>', methods=['DELETE'])
+def deactivate_operator(op_id):
+    """Deactivate an operator (admin only)."""
+    db = get_db()
+    db.execute('UPDATE operator SET is_active = 0 WHERE id = ?', (op_id,))
+    from app.audit import log_action
+    log_action(db, 'UPDATE', 'operator', op_id,
+               [('is_active', '1', '0')], get_current_operator_name())
+    db.commit()
+    return jsonify({'ok': True})

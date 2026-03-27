@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Patients</h2>
+
+<div class="export-form">
+    <input type="text" id="patientSearch" class="big-input" placeholder="Search by name or patient number...">
+</div>
+
+<div class="card-list" id="patientList"></div>
+<div id="patientEmpty" class="empty-state" style="display:none">
+    <p>No patients found</p>
+</div>
+
+<!-- PATIENT DETAIL MODAL -->
+<div id="patientModal" class="wizard-overlay" style="display:none">
+    <div class="wizard-container">
+        <div class="wizard-header">
+            <span class="step-indicator" id="patientNumber"></span>
+            <h2 id="patientModalName"></h2>
+            <button id="btnClosePatient" class="wizard-close">&times;</button>
+        </div>
+        <div class="wizard-body" id="patientModalBody"></div>
+        <div class="wizard-footer">
+            <button id="btnClosePatientFooter" class="wiz-btn wiz-btn-cancel">Close</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/patients.js"></script>
+{% endblock %}
