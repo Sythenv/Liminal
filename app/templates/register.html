@@ -281,6 +281,26 @@
     </div>
 </div>
 
+<!-- ===== PANIC CONFIRMATION MODAL ===== -->
+<div id="panicModal" class="wizard-overlay" style="display:none">
+    <div class="wizard-container panic-confirm-container">
+        <div class="wizard-header">
+            <h2>Critical Values Detected</h2>
+        </div>
+        <div class="wizard-body">
+            <div id="panicList" class="panic-list"></div>
+            <label class="panic-checkbox">
+                <input type="checkbox" id="panicCheckbox">
+                <span>I have verified these critical values</span>
+            </label>
+        </div>
+        <div class="wizard-footer">
+            <button id="panicCancel" class="wiz-btn wiz-btn-cancel">Go Back</button>
+            <button id="panicConfirm" class="wiz-btn wiz-btn-panic-confirm" disabled>Confirm & Save</button>
+        </div>
+    </div>
+</div>
+
 <!-- ===== SUCCESS OVERLAY ===== -->
 <div id="successOverlay" class="success-overlay" style="display:none">
     <div class="success-content">

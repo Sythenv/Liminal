@@ -1124,7 +1124,7 @@ function openResults(entryId, prefetchedEntry) {
                 const unrejectBtn = document.createElement('button');
                 unrejectBtn.className = 'wiz-btn unreject-btn';
                 unrejectBtn.textContent = 'Undo Rejection';
-                unrejectBtn.addEventListener('click', () => pinProtect(() => executeUnreject(entry.id)));
+                unrejectBtn.addEventListener('click', () => executeUnreject(entry.id));
                 rejectFooter.appendChild(unrejectBtn);
             } else if (isReview) {
                 banner.textContent = 'REVIEW';
@@ -1136,7 +1136,7 @@ function openResults(entryId, prefetchedEntry) {
                 const validateBtn = document.createElement('button');
                 validateBtn.className = 'wiz-btn validate-btn';
                 validateBtn.textContent = 'Validate Results';
-                validateBtn.addEventListener('click', () => pinProtect(() => executeValidate(entry.id)));
+                validateBtn.addEventListener('click', () => executeValidate(entry.id));
                 rejectFooter.appendChild(validateBtn);
 
                 // Fetch validation context
@@ -1512,23 +1512,26 @@ function confirmReject(reason) {
 }
 
 function executeReject(reason) {
-    fetch(`/api/register/entries/${currentEntryId}/reject`, {
+    authFetch(`/api/register/entries/${currentEntryId}/reject`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Operator-Pin': currentPin || '' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: reason })
     }).then(r => {
         if (r.ok) {
             closeResultModal();
             showSuccess('REJECTED', 'var(--primary)');
             loadEntries();
+        } else {
+            r.json().then(d => alert(d.error || 'Rejection failed'));
         }
     });
 }
 
 function executeValidate(entryId) {
-    fetch(`/api/register/entries/${entryId}/validate`, {
+    authFetch(`/api/register/entries/${entryId}/validate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Operator-Pin': currentPin || '' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
     }).then(r => {
         if (r.ok) {
             closeResultModal();
@@ -1539,19 +1542,24 @@ function executeValidate(entryId) {
             } else {
                 loadEntries();
             }
+        } else {
+            r.json().then(d => alert(d.error || 'Validation failed'));
         }
     });
 }
 
 function executeUnreject(entryId) {
-    fetch(`/api/register/entries/${entryId}/unreject`, {
+    authFetch(`/api/register/entries/${entryId}/unreject`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Operator-Pin': currentPin || '' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
     }).then(r => {
         if (r.ok) {
             closeResultModal();
             showSuccess('Restored');
             loadEntries();
+        } else {
+            r.json().then(d => alert(d.error || 'Unreject failed'));
         }
     });
 }
@@ -1577,7 +1585,7 @@ function selectBG(btn, code, value) {
     btn.dataset.value = value;
 }
 
-function saveResults() {
+function collectPayload() {
     const payload = {};
     const panicCodes = new Set();
 
@@ -1616,9 +1624,13 @@ function saveResults() {
         }
     });
 
-    fetch(`/api/register/entries/${currentEntryId}/results`, {
+    return payload;
+}
+
+function submitPayload(payload) {
+    authFetch(`/api/register/entries/${currentEntryId}/results`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Operator-Pin': currentPin || '' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
     }).then(r => {
         if (r.ok) {
@@ -1627,6 +1639,71 @@ function saveResults() {
             if (isRegisterMode) loadEntries();
         }
     });
+}
+
+function saveResults() {
+    const payload = collectPayload();
+
+    if (hasPanicValues()) {
+        showPanicModal(payload);
+    } else {
+        submitPayload(payload);
+    }
+}
+
+function showPanicModal(payload) {
+    const list = document.getElementById('panicList');
+    const checkbox = document.getElementById('panicCheckbox');
+    const confirmBtn = document.getElementById('panicConfirm');
+    list.innerHTML = '';
+    checkbox.checked = false;
+    confirmBtn.disabled = true;
+
+    // Build list of panic values with thresholds
+    document.querySelectorAll('.result-numeric.panic').forEach(container => {
+        const input = container.querySelector('.result-input') || container.querySelector('.sub-numeric-input');
+        if (!input) return;
+        const code = input.dataset.code || input.closest('.structured-fields')?.dataset.code;
+        const val = input.value;
+        const test = currentTests.find(t => t.code === code);
+        const unit = test ? (test.unit || '') : '';
+
+        // Find thresholds (from test or structured sub-field)
+        let low = test ? test.panic_low : null;
+        let high = test ? test.panic_high : null;
+        const subKey = input.dataset.subKey;
+        if (subKey && STRUCTURED_TESTS[code]) {
+            const field = STRUCTURED_TESTS[code].fields.find(f => f.key === subKey);
+            if (field) { low = field.panic_low; high = field.panic_high; }
+        }
+
+        const item = document.createElement('div');
+        item.className = 'panic-item';
+        const label = subKey ? `${code} / ${subKey}` : code;
+        let threshold = '';
+        if (low != null && parseFloat(val) < low) threshold = `< ${low}`;
+        if (high != null && parseFloat(val) > high) threshold = `> ${high}`;
+        item.innerHTML = `<span class="panic-item-test">${label}</span>` +
+            `<span class="panic-item-value">${val} ${unit}</span>` +
+            `<span class="panic-item-threshold">Threshold: ${threshold}</span>`;
+        list.appendChild(item);
+    });
+
+    // Checkbox enables confirm button
+    checkbox.onchange = () => { confirmBtn.disabled = !checkbox.checked; };
+
+    // Cancel
+    document.getElementById('panicCancel').onclick = () => {
+        document.getElementById('panicModal').style.display = 'none';
+    };
+
+    // Confirm
+    confirmBtn.onclick = () => {
+        document.getElementById('panicModal').style.display = 'none';
+        submitPayload(payload);
+    };
+
+    document.getElementById('panicModal').style.display = 'flex';
 }
 
 function closeResultModal() {
