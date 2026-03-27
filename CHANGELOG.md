@@ -61,5 +61,9 @@ First release. Standalone kits Linux + Windows (Python embarqué, 0 dépendance)
 - PIN logo spacing reduced
 
 ### Changed
+- CSS refactor: 52 variables → 15 core + signal palette (ok/alert/critical)
+- Unified signal system for badges and buttons
+- 3 text sizes, 2 radius values, 1 shadow
+- Legacy aliases preserved for backward compat
 - RFC rewritten as operational roadmap with sprint planning
 - CLAUDE.md compressed (79→22 lines)
