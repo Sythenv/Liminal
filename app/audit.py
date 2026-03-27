@@ -13,7 +13,10 @@ import json
 
 def compute_hash(db, table_name, record_id):
     """Compute SHA256 hash of a record's current state."""
-    row = db.execute(f'SELECT * FROM {table_name} WHERE id = ?', (record_id,)).fetchone()
+    try:
+        row = db.execute(f'SELECT * FROM {table_name} WHERE id = ?', (record_id,)).fetchone()
+    except Exception:
+        return None
     if not row:
         return None
     data = {k: str(row[k]) if row[k] is not None else None for k in row.keys()}

@@ -1943,18 +1943,6 @@ h2 { color: var(--primary); margin: 20px 0 16px; font-size: 20px; }
     font-weight: 600;
     color: #999;
 }
-.setup-fields {
-    margin-bottom: 20px;
-    text-align: left;
-}
-.setup-fields label {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--gray);
-    text-transform: uppercase;
-    display: block;
-    margin-bottom: 6px;
-}
 @keyframes shake {
     0%, 100% { transform: translateX(0); }
     20% { transform: translateX(-8px); }
@@ -1964,180 +1952,312 @@ h2 { color: var(--primary); margin: 20px 0 16px; font-size: 20px; }
 }
 .shake { animation: shake 0.4s ease; }
 
-/* ===== ONBOARDING WIZARD ===== */
-.onboarding-wizard {
-    width: 400px;
-    max-width: 90vw;
+/* ===== ONBOARDING — 7-screen setup wizard ===== */
+
+@keyframes obFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+}
+@keyframes obCheckPop {
+    0% { transform: scale(0); opacity: 0; }
+    60% { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+@keyframes obCheckStroke {
+    to { stroke-dashoffset: 0; }
+}
+
+.ob-screen {
+    max-width: 520px;
+    width: 90vw;
     text-align: center;
+    animation: obFadeIn 0.25s ease;
 }
-.onboarding-wizard .wiz-step-indicator {
-    font-size: 12px;
-    color: #999;
-    letter-spacing: 0.5px;
-    margin-bottom: 8px;
-    font-weight: 600;
-    text-transform: uppercase;
-}
-.onboarding-wizard .wiz-step-dots {
+.ob-step-dots {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     justify-content: center;
     margin-bottom: 20px;
 }
-.onboarding-wizard .wiz-dot {
-    width: 8px;
-    height: 8px;
+.ob-dot {
+    width: 8px; height: 8px;
     border-radius: 50%;
     background: var(--border);
-    transition: all 0.2s;
+    transition: all 0.25s;
 }
-.onboarding-wizard .wiz-dot.active {
-    background: var(--primary);
-    transform: scale(1.3);
-}
-.onboarding-wizard .wiz-dot.done {
-    background: var(--green);
-}
-.onboarding-wizard .wiz-title {
-    font-size: 20px;
+.ob-dot.active { background: var(--primary); transform: scale(1.3); }
+.ob-dot.done { background: var(--green); }
+
+.ob-title {
+    font-size: 24px;
     font-weight: 700;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     color: var(--primary);
 }
-.onboarding-wizard .wiz-subtitle {
-    font-size: 13px;
+.ob-subtitle {
+    font-size: 14px;
     color: var(--gray);
     margin-bottom: 24px;
+    line-height: 1.4;
 }
-.onboarding-wizard .wiz-form {
-    text-align: left;
-}
-.onboarding-wizard .wiz-actions {
-    display: flex;
-    gap: 12px;
-    margin-top: 24px;
-    justify-content: center;
-}
-.onboarding-wizard .wiz-actions .wiz-btn {
-    flex: 1;
-    max-width: 180px;
-}
-.onboarding-wizard .test-toggle-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-    text-align: left;
-    max-height: 340px;
-    overflow-y: auto;
-}
-.onboarding-wizard .test-toggle {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 12px;
-    border: 2px solid var(--border);
-    border-radius: 10px;
-    cursor: pointer;
-    background: var(--white);
-    font-size: 13px;
-    font-weight: 600;
-    transition: all 0.15s;
-    user-select: none;
-}
-.onboarding-wizard .test-toggle.selected {
-    border-color: var(--primary);
-    background: var(--primary);
-    color: var(--white);
-}
-.onboarding-wizard .test-toggle .test-code {
-    font-family: 'SF Mono', Consolas, monospace;
-    font-weight: 700;
-}
-.onboarding-wizard .operator-card {
-    background: var(--white);
-    border: 2px solid var(--border);
-    border-radius: 10px;
-    padding: 14px;
-    margin-bottom: 12px;
-    text-align: left;
-}
-.onboarding-wizard .operator-card .op-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-.onboarding-wizard .operator-card .op-level-badge {
-    font-size: 11px;
-    font-weight: 700;
-    padding: 3px 10px;
-    border-radius: 20px;
-    background: var(--primary);
-    color: var(--white);
-    text-transform: uppercase;
-}
-.onboarding-wizard .operator-card .op-level-badge.level-1 {
-    background: var(--blue);
-}
-.onboarding-wizard .operator-card .op-level-badge.level-2 {
-    background: var(--green);
-}
-.onboarding-wizard .created-operators {
-    margin-bottom: 16px;
-}
-.onboarding-wizard .created-op {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 12px;
-    background: var(--white);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    margin-bottom: 6px;
-    font-size: 14px;
-}
-.onboarding-wizard .created-op .op-name {
-    font-weight: 700;
-}
-.onboarding-wizard .created-op .op-badge {
-    font-size: 11px;
-    font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 12px;
-    color: var(--white);
-}
-.onboarding-wizard .created-op .op-badge.sup { background: var(--green); }
-.onboarding-wizard .created-op .op-badge.tech { background: var(--blue); }
-.onboarding-wizard .recap-section {
-    text-align: left;
-    margin-bottom: 16px;
-}
-.onboarding-wizard .recap-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 15px;
-}
-.onboarding-wizard .recap-row:last-child { border-bottom: none; }
-.onboarding-wizard .recap-label {
+.ob-greeting {
+    font-size: 16px;
     color: var(--gray);
-    font-weight: 600;
+    margin-bottom: 4px;
 }
-.onboarding-wizard .recap-value {
+
+/* Big centered input for welcome screen */
+.ob-input-big {
+    width: 100%;
+    max-width: 300px;
+    padding: 16px;
+    font-size: 18px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s;
+    background: var(--white);
+}
+.ob-input-big:focus {
+    border-color: var(--primary);
+}
+
+/* Primary action button */
+.ob-btn {
+    display: inline-block;
+    padding: 14px 32px;
+    border-radius: var(--radius);
+    border: none;
+    font-size: 16px;
     font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    min-width: 160px;
 }
-.onboarding-wizard .wiz-btn-start {
+.ob-btn-primary {
+    background: var(--primary);
+    color: var(--white);
+}
+.ob-btn-primary:hover { background: var(--primary-dark); }
+.ob-btn-primary:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+.ob-btn-green {
     background: var(--green);
     color: var(--white);
     font-size: 18px;
     padding: 16px 32px;
     width: 100%;
-    max-width: 100%;
 }
-.onboarding-wizard .wiz-btn-start:hover {
-    background: var(--green-dark);
+.ob-btn-green:hover { background: var(--green-dark); }
+.ob-btn-confirm {
+    background: var(--green);
+    color: var(--white);
+    width: 100%;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
 }
+.ob-btn-confirm:hover { background: var(--green-dark); }
+
+/* Back link (subtle) */
+.ob-back {
+    display: inline-block;
+    font-size: 13px;
+    color: var(--gray);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px 12px;
+    margin-right: 8px;
+}
+.ob-back:hover { color: var(--primary); }
+
+/* Skip link */
+.ob-skip {
+    display: inline-block;
+    font-size: 13px;
+    color: var(--text-muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    margin-top: 8px;
+}
+.ob-skip:hover { color: var(--gray); text-decoration: underline; }
+
+/* Actions bar */
+.ob-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Form area */
+.ob-form {
+    text-align: left;
+}
+
+/* --- PIN screens (2 & 3): numpad inside wizard --- */
+.ob-numpad-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.ob-numpad-wrap .pin-message { display: none; }
+.ob-numpad-wrap .pin-demo-hint { display: none; }
+
+/* --- Tests grid (screen 5) --- */
+.ob-test-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    text-align: left;
+    margin-bottom: 16px;
+}
+.ob-test-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    background: var(--white);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    transition: all 0.15s;
+    user-select: none;
+}
+.ob-test-toggle.selected {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: var(--white);
+}
+
+/* --- Team screen (screen 6) --- */
+/* Team: two columns side by side */
+.ob-team-layout {
+    text-align: left;
+}
+.ob-team-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.ob-op-card {
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+}
+.ob-op-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.ob-op-card-title {
+    font-weight: 700;
+    font-size: 13px;
+}
+.ob-level-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    color: var(--white);
+    text-transform: uppercase;
+}
+.ob-level-badge.level-1 { background: var(--blue); }
+.ob-level-badge.level-2 { background: var(--green); }
+.ob-op-card input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+.ob-op-card input:focus { border-color: var(--primary); outline: none; }
+.ob-op-add {
+    width: 100%;
+    padding: 8px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--primary);
+    color: var(--white);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.ob-op-add:hover { opacity: 0.85; }
+
+/* Operator pills */
+.ob-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 16px;
+    justify-content: center;
+}
+.ob-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--white);
+}
+.ob-pill.sup { background: var(--green); }
+.ob-pill.tech { background: var(--blue); }
+
+/* --- Ready screen (screen 7) checkmark --- */
+.ob-check-circle {
+    width: 80px; height: 80px;
+    margin: 0 auto 20px;
+    animation: obCheckPop 0.5s ease forwards;
+}
+.ob-check-circle circle {
+    fill: var(--green);
+}
+.ob-check-circle polyline {
+    fill: none;
+    stroke: var(--white);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 30;
+    stroke-dashoffset: 30;
+    animation: obCheckStroke 0.35s ease 0.3s forwards;
+}
+
+/* Recap rows */
+.ob-recap {
+    text-align: left;
+    margin-bottom: 20px;
+}
+.ob-recap-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-rule);
+    font-size: 15px;
+}
+.ob-recap-row:last-child { border-bottom: none; }
+.ob-recap-label { color: var(--gray); font-weight: 600; }
+.ob-recap-value { font-weight: 700; }
 
 /* ===== UTILITY CLASSES ===== */
 .u-mt-6 { margin-top: 6px; }

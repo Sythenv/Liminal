@@ -6,6 +6,8 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify, current_app
 from fpdf import FPDF
 from app.db import get_db
+from app.audit import log_action
+from app.auth import get_current_operator_name
 
 bp = Blueprint('reports', __name__)
 
@@ -374,6 +376,12 @@ def monthly_report():
     filepath = os.path.join(current_app.config['DATA_DIR'], 'exports', filename)
 
     _build_pdf(data, site_name, period_label, filepath)
+
+    log_action(db, 'REPORT', 'lab_register', 0,
+               [('format', None, 'pdf'), ('filename', None, filename),
+                ('period', None, f'{year}-{month:02d}')],
+               get_current_operator_name())
+    db.commit()
 
     return jsonify({
         'filename': filename,

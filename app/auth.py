@@ -238,6 +238,13 @@ def setup():
                (name, pin_h, salt))
     db.commit()
 
+    op_id = db.execute('SELECT last_insert_rowid()').fetchone()[0]
+    from app.audit import log_action
+    log_action(db, 'SETUP', 'operator', op_id,
+               [('name', None, name), ('level', None, '3')],
+               name)
+    db.commit()
+
     return jsonify({'ok': True, 'message': f'Admin operator "{name}" created'}), 201
 
 

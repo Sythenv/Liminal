@@ -40,12 +40,8 @@
 
 <!-- PIN NUMPAD OVERLAY -->
 <div id="pinOverlay" class="pin-overlay" style="display:none" data-pin="">
-    <img src="/static/img/logo.svg" alt="" class="pin-logo">
+    <img src="/static/img/logo.svg" alt="" class="pin-logo" id="pinLogo">
     <div class="pin-container" id="pinPad">
-        <div id="setupFields" class="setup-fields" style="display:none">
-            <label>Your Name</label>
-            <input type="text" id="setupName" class="big-input" placeholder="Admin name">
-        </div>
         <div class="pin-message" id="pinMessage">Enter your PIN</div>
         <div class="pin-dots" id="pinDots"></div>
         <div class="pin-error" id="pinError" style="display:none"></div>
@@ -67,7 +63,7 @@
             Admin <span>0777</span> · Sup <span>0755</span> · Tech <span>0644</span>
         </div>
     </div>
-    <div class="onboarding-wizard" id="onboardingWizard" style="display:none"></div>
+    <div class="ob-screen" id="onboardingWizard" style="display:none"></div>
 </div>
 
 <footer class="app-footer"><span class="version">{{ config.VERSION }}</span></footer>

@@ -6,6 +6,8 @@ import json
 from datetime import datetime
 from flask import Blueprint, request, jsonify, send_file, current_app
 from app.db import get_db
+from app.audit import log_action
+from app.auth import get_current_operator_name
 
 bp = Blueprint('export', __name__)
 
@@ -123,6 +125,12 @@ def export_excel():
     ws.freeze_panes(1, 0)
     wb.close()
 
+    log_action(db, 'EXPORT', 'lab_register', 0,
+               [('format', None, 'excel'), ('filename', None, filename),
+                ('date_range', None, f'{date_from} to {date_to}')],
+               get_current_operator_name())
+    db.commit()
+
     return jsonify({'filename': filename, 'url': f'/api/export/download/{filename}'})
 
 
@@ -169,6 +177,12 @@ def export_csv():
             row += [entry['reporting_date'], entry['technician_initials'],
                     entry['status'], entry['remarks']]
             writer.writerow(row)
+
+    log_action(db, 'EXPORT', 'lab_register', 0,
+               [('format', None, 'csv'), ('filename', None, filename),
+                ('date_range', None, f'{date_from} to {date_to}')],
+               get_current_operator_name())
+    db.commit()
 
     return jsonify({'filename': filename, 'url': f'/api/export/download/{filename}'})
 

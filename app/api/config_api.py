@@ -2,6 +2,8 @@
 
 from flask import Blueprint, jsonify, request
 from app.db import get_db
+from app.audit import log_action
+from app.auth import get_current_operator_name
 
 bp = Blueprint('config', __name__)
 
@@ -39,6 +41,9 @@ def update_active_tests():
             f'UPDATE test_definition SET is_active = 1 WHERE code IN ({placeholders})',
             active_codes
         )
+    log_action(db, 'CONFIG_UPDATE', 'test_definition', 0,
+               [('active_tests', None, ','.join(active_codes))],
+               get_current_operator_name())
     db.commit()
 
     # Return updated list
@@ -91,7 +96,17 @@ def update_site_config():
     updates.append("updated_at = datetime('now')")
     values.append(1)  # WHERE id = 1
 
+    # Build audit changes from the fields being updated
+    current = db.execute('SELECT * FROM site_config WHERE id = 1').fetchone()
+    audit_changes = []
+    for field in allowed_fields:
+        if field in data:
+            old_val = current[field] if current else None
+            audit_changes.append((field, old_val, data[field].strip()))
+
     db.execute(f"UPDATE site_config SET {', '.join(updates)} WHERE id = ?", values)
+    if audit_changes:
+        log_action(db, 'CONFIG_UPDATE', 'site_config', 1, audit_changes, get_current_operator_name())
     db.commit()
 
     config = db.execute('SELECT * FROM site_config WHERE id = 1').fetchone()

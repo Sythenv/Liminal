@@ -214,61 +214,197 @@ function authFetch(url, options) {
     });
 }
 
-// ===== FIRST-RUN SETUP =====
+// ===== FIRST-RUN SETUP (7-screen onboarding) =====
+
+let onboardingData = {
+    siteConfig: {},
+    activeTests: [],
+    createdOperators: []
+};
 
 function showSetupScreen() {
     setupMode = true;
     setupStep = 1;
     setupData = {};
-    const overlay = document.getElementById('pinOverlay');
-    const msg = document.getElementById('pinMessage');
-    const setupFields = document.getElementById('setupFields');
-
-    setupFields.style.display = 'block';
-    msg.textContent = 'Choose your admin PIN';
-    overlay.style.display = 'flex';
-    overlay.dataset.pin = '';
-    document.getElementById('pinDots').textContent = '';
+    onboardingData = { siteConfig: {}, activeTests: [], createdOperators: [] };
+    showObScreen1();
 }
 
-function handleSetupPin(pin) {
-    if (setupStep === 1) {
-        setupData.pin = pin;
-        setupStep = 2;
-        document.getElementById('pinMessage').textContent = 'Confirm PIN';
-        document.getElementById('pinOverlay').dataset.pin = '';
-        document.getElementById('pinDots').textContent = '';
-    } else if (setupStep === 2) {
-        if (pin !== setupData.pin) {
-            showPinError('PINs do not match');
-            setupStep = 1;
-            document.getElementById('pinMessage').textContent = 'Choose your admin PIN';
-            return;
-        }
-        const nameInput = document.getElementById('setupName');
-        const name = nameInput ? nameInput.value.trim() : '';
-        if (!name) {
-            showPinError('Enter your name first');
-            setupStep = 1;
-            document.getElementById('pinMessage').textContent = 'Choose your admin PIN';
-            return;
-        }
+// --- Helper: render step dots (screens 1-7) ---
+function renderObDots(container, current) {
+    const dots = document.createElement('div');
+    dots.className = 'ob-step-dots';
+    for (let i = 1; i <= 7; i++) {
+        const d = document.createElement('div');
+        d.className = 'ob-dot';
+        if (i < current) d.classList.add('done');
+        if (i === current) d.classList.add('active');
+        dots.appendChild(d);
+    }
+    container.appendChild(dots);
+}
 
+// --- Helper: clear wizard and prepare fresh screen ---
+function obReset() {
+    const wiz = document.getElementById('onboardingWizard');
+    wiz.innerHTML = '';
+    wiz.style.display = 'block';
+    return wiz;
+}
+
+// ==========================================
+//  SCREEN 1: Welcome — admin name entry
+// ==========================================
+function showObScreen1() {
+    const overlay = document.getElementById('pinOverlay');
+    overlay.style.display = 'flex';
+    overlay.dataset.pin = '';
+    // Hide numpad, show wizard
+    document.getElementById('pinPad').style.display = 'none';
+    const wiz = obReset();
+
+    renderObDots(wiz, 1);
+
+    const title = document.createElement('div');
+    title.className = 'ob-title';
+    title.textContent = 'Welcome to Liminal';
+    wiz.appendChild(title);
+
+    const sub = document.createElement('div');
+    sub.className = 'ob-subtitle';
+    sub.textContent = 'Let\u2019s set up your laboratory. What\u2019s your name?';
+    wiz.appendChild(sub);
+
+    const nameInput = document.createElement('input');
+    nameInput.className = 'ob-input-big';
+    nameInput.type = 'text';
+    nameInput.placeholder = 'Your name';
+    nameInput.autocomplete = 'off';
+    if (setupData.name) nameInput.value = setupData.name;
+    wiz.appendChild(nameInput);
+
+    const actions = document.createElement('div');
+    actions.className = 'ob-actions';
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'ob-btn ob-btn-primary';
+    nextBtn.textContent = 'Continue \u2192';
+    nextBtn.disabled = !nameInput.value.trim();
+    nameInput.addEventListener('input', () => {
+        nextBtn.disabled = !nameInput.value.trim();
+    });
+    nameInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && nameInput.value.trim()) showObScreen2();
+    });
+    nextBtn.addEventListener('click', () => {
+        if (!nameInput.value.trim()) return;
+        showObScreen2();
+    });
+    actions.appendChild(nextBtn);
+    wiz.appendChild(actions);
+
+    // Store name on transition
+    function showObScreen2() {
+        setupData.name = nameInput.value.trim();
+        obGoScreen2();
+    }
+
+    setTimeout(() => nameInput.focus(), 100);
+}
+
+// ==========================================
+//  SCREEN 2: Choose PIN
+// ==========================================
+function obGoScreen2() {
+    setupMode = true;
+    setupStep = 2;
+    const overlay = document.getElementById('pinOverlay');
+    overlay.dataset.pin = '';
+
+    // Show numpad, hide wizard
+    document.getElementById('pinPad').style.display = '';
+    const wiz = obReset();
+    wiz.style.display = 'none';
+
+    // Update numpad message area
+    document.getElementById('pinDots').textContent = '';
+    document.getElementById('pinError').style.display = 'none';
+    const msg = document.getElementById('pinMessage');
+    msg.style.display = 'block';
+    msg.innerHTML = '<span class="ob-greeting">Hi, ' + escapeHtml(setupData.name) + '</span><br>Choose a 4\u20138 digit PIN';
+    // Hide demo hint during setup
+    var hint = document.querySelector('.pin-demo-hint');
+    if (hint) hint.style.display = 'none';
+
+    // Remove start over link if present
+    var so = document.getElementById('obStartOver');
+    if (so) so.remove();
+
+    shuffleNumpad();
+}
+
+// ==========================================
+//  SCREEN 3: Confirm PIN
+// ==========================================
+function obGoScreen3() {
+    setupStep = 3;
+    const overlay = document.getElementById('pinOverlay');
+    overlay.dataset.pin = '';
+    document.getElementById('pinDots').textContent = '';
+    document.getElementById('pinError').style.display = 'none';
+    const msg = document.getElementById('pinMessage');
+    msg.style.display = 'block';
+    msg.textContent = 'Confirm your PIN';
+    shuffleNumpad();
+
+    // Add "start over" link below demo hints
+    let startOver = document.getElementById('obStartOver');
+    if (!startOver) {
+        startOver = document.createElement('button');
+        startOver.id = 'obStartOver';
+        startOver.className = 'ob-back';
+        startOver.textContent = '\u2190 Start over';
+        startOver.style.marginTop = '12px';
+        startOver.addEventListener('click', () => {
+            startOver.remove();
+            setupData = {};
+            showObScreen1();
+        });
+        document.getElementById('pinPad').appendChild(startOver);
+    }
+}
+
+// ==========================================
+//  handleSetupPin — routes PIN entry for screens 2 & 3
+// ==========================================
+function handleSetupPin(pin) {
+    if (setupStep === 2) {
+        // Screen 2: store chosen PIN, advance to screen 3
+        setupData.pin = pin;
+        obGoScreen3();
+    } else if (setupStep === 3) {
+        // Screen 3: confirm PIN
+        if (pin !== setupData.pin) {
+            showPinError('PINs don\u2019t match \u2014 try again');
+            // Back to screen 2 to re-enter PIN
+            setupData.pin = null;
+            obGoScreen2();
+            return;
+        }
+        // PINs match — call setup API
         fetch('/api/auth/setup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: name, pin: pin })
+            body: JSON.stringify({ name: setupData.name, pin: pin })
         })
         .then(r => r.json())
         .then(data => {
             if (data.ok) {
                 setupMode = false;
-                document.getElementById('setupFields').style.display = 'none';
                 currentPin = pin;
                 currentLevel = 3;
-                currentOperatorName = name;
-                // Start onboarding wizard instead of hiding
-                startOnboardingWizard();
+                currentOperatorName = setupData.name;
+                setSession(pin, 3, setupData.name);
+                obGoScreen4();
             } else {
                 showPinError(data.error || 'Setup failed');
             }
@@ -276,88 +412,54 @@ function handleSetupPin(pin) {
     }
 }
 
-// ===== ONBOARDING WIZARD =====
+// --- Helper: escape HTML ---
+function escapeHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+}
 
-let onboardingStep = 3;
-let onboardingData = {
-    siteConfig: {},
-    activeTests: [],
-    createdOperators: []
-};
-
-function startOnboardingWizard() {
+// ==========================================
+//  SCREEN 4: Your Lab (site config)
+// ==========================================
+function obGoScreen4() {
     // Hide numpad, show wizard
     document.getElementById('pinPad').style.display = 'none';
-    const wizard = document.getElementById('onboardingWizard');
-    wizard.style.display = 'block';
-    onboardingStep = 3;
-    showOnboardingStep3();
-}
+    var hint = document.querySelector('.pin-demo-hint');
+    if (hint) hint.style.display = '';
+    const msg = document.getElementById('pinMessage');
+    msg.style.display = 'none';
 
-function renderStepHeader(wizard, step, title, subtitle) {
-    const totalSteps = 6;
-    wizard.innerHTML = '';
+    const wiz = obReset();
+    renderObDots(wiz, 4);
 
-    // Step indicator text
-    const indicator = document.createElement('div');
-    indicator.className = 'wiz-step-indicator';
-    indicator.textContent = 'Step ' + step + ' of ' + totalSteps;
-    wizard.appendChild(indicator);
+    const title = document.createElement('div');
+    title.className = 'ob-title';
+    title.textContent = 'Configure your lab';
+    wiz.appendChild(title);
 
-    // Step dots
-    const dots = document.createElement('div');
-    dots.className = 'wiz-step-dots';
-    for (let i = 1; i <= totalSteps; i++) {
-        const dot = document.createElement('div');
-        dot.className = 'wiz-dot';
-        if (i < step) dot.classList.add('done');
-        if (i === step) dot.classList.add('active');
-        dots.appendChild(dot);
-    }
-    wizard.appendChild(dots);
-
-    // Title
-    const h = document.createElement('div');
-    h.className = 'wiz-title';
-    h.textContent = title;
-    wizard.appendChild(h);
-
-    // Subtitle
-    if (subtitle) {
-        const sub = document.createElement('div');
-        sub.className = 'wiz-subtitle';
-        sub.textContent = subtitle;
-        wizard.appendChild(sub);
-    }
-}
-
-// ----- Step 3: Site Configuration -----
-
-function showOnboardingStep3() {
-    const wizard = document.getElementById('onboardingWizard');
-    renderStepHeader(wizard, 3, 'Site Configuration', 'Configure your laboratory site');
+    const sub = document.createElement('div');
+    sub.className = 'ob-subtitle';
+    sub.textContent = 'Basic site information';
+    wiz.appendChild(sub);
 
     const form = document.createElement('div');
-    form.className = 'wiz-form';
+    form.className = 'ob-form';
 
     // Fetch current config
     fetch('/api/config')
         .then(r => r.json())
         .then(config => {
-            // Site name
-            const nameInput = createInput({ id: 'wizSiteName', placeholder: 'Laboratory name', value: config.site_name || '' });
+            const nameInput = createInput({ id: 'obSiteName', placeholder: 'Laboratory name', value: config.site_name || '' });
             form.appendChild(createField('Site Name', nameInput));
 
-            // Site code
-            const codeInput = createInput({ id: 'wizSiteCode', placeholder: '3-5 characters', value: config.site_code || '' });
+            const codeInput = createInput({ id: 'obSiteCode', placeholder: '3-5 characters', value: config.site_code || '' });
             codeInput.maxLength = 5;
             form.appendChild(createField('Site Code', codeInput));
 
-            // Country
-            const countryInput = createInput({ id: 'wizCountry', placeholder: 'Country', value: config.country || '' });
+            const countryInput = createInput({ id: 'obCountry', placeholder: 'Country', value: config.country || '' });
             form.appendChild(createField('Country', countryInput));
 
-            // Language
             const langGroup = createButtonGroup({
                 items: [
                     { value: 'en', label: 'EN' },
@@ -369,14 +471,14 @@ function showOnboardingStep3() {
             langGroup.setValue(config.default_language || 'en');
             form.appendChild(createField('Default Language', langGroup.element));
 
-            wizard.appendChild(form);
+            wiz.appendChild(form);
 
-            // Actions
             const actions = document.createElement('div');
-            actions.className = 'wiz-actions';
+            actions.className = 'ob-actions';
+
             const nextBtn = document.createElement('button');
-            nextBtn.className = 'wiz-btn wiz-btn-next';
-            nextBtn.textContent = 'Next';
+            nextBtn.className = 'ob-btn ob-btn-primary';
+            nextBtn.textContent = 'Next \u2192';
             nextBtn.addEventListener('click', () => {
                 const siteName = nameInput.value.trim();
                 const siteCode = codeInput.value.trim().toUpperCase();
@@ -387,7 +489,6 @@ function showOnboardingStep3() {
                 if (siteCode.length < 3 || siteCode.length > 5) { codeInput.focus(); return; }
                 if (!country) { countryInput.focus(); return; }
 
-                // Save config
                 fetch('/api/config', {
                     method: 'PUT',
                     headers: {
@@ -410,56 +511,62 @@ function showOnboardingStep3() {
                             country: country,
                             default_language: lang || 'en'
                         };
-                        showOnboardingStep4();
+                        obGoScreen5();
                     }
                 });
             });
             actions.appendChild(nextBtn);
-            wizard.appendChild(actions);
+            wiz.appendChild(actions);
         });
 }
 
-// ----- Step 4: Active Tests -----
+// ==========================================
+//  SCREEN 5: Active Tests
+// ==========================================
+function obGoScreen5() {
+    const wiz = obReset();
+    renderObDots(wiz, 5);
 
-function showOnboardingStep4() {
-    const wizard = document.getElementById('onboardingWizard');
-    renderStepHeader(wizard, 4, 'Active Tests', 'Select the tests available at this site');
+    const title = document.createElement('div');
+    title.className = 'ob-title';
+    title.textContent = 'Active tests';
+    wiz.appendChild(title);
 
-    // Fetch all tests
+    const sub = document.createElement('div');
+    sub.className = 'ob-subtitle';
+    sub.textContent = 'Select the tests available at this site';
+    wiz.appendChild(sub);
+
     fetch('/api/config/tests/all')
         .then(r => r.json())
         .then(tests => {
             const grid = document.createElement('div');
-            grid.className = 'test-toggle-grid';
+            grid.className = 'ob-test-grid';
 
             const toggles = [];
             tests.forEach(t => {
                 const btn = document.createElement('div');
-                btn.className = 'test-toggle' + (t.is_active ? ' selected' : '');
-                btn.innerHTML = '<span class="test-code">' + t.code + '</span>';
+                btn.className = 'ob-test-toggle' + (t.is_active ? ' selected' : '');
+                btn.textContent = t.code;
                 btn.dataset.code = t.code;
-                btn.addEventListener('click', () => {
-                    btn.classList.toggle('selected');
-                });
+                btn.addEventListener('click', () => btn.classList.toggle('selected'));
                 grid.appendChild(btn);
                 toggles.push(btn);
             });
+            wiz.appendChild(grid);
 
-            wizard.appendChild(grid);
-
-            // Actions
             const actions = document.createElement('div');
-            actions.className = 'wiz-actions';
+            actions.className = 'ob-actions';
 
             const backBtn = document.createElement('button');
-            backBtn.className = 'wiz-btn wiz-btn-back';
-            backBtn.textContent = 'Back';
-            backBtn.addEventListener('click', showOnboardingStep3);
+            backBtn.className = 'ob-back';
+            backBtn.textContent = '\u2190 Back';
+            backBtn.addEventListener('click', obGoScreen4);
             actions.appendChild(backBtn);
 
             const nextBtn = document.createElement('button');
-            nextBtn.className = 'wiz-btn wiz-btn-next';
-            nextBtn.textContent = 'Next';
+            nextBtn.className = 'ob-btn ob-btn-primary';
+            nextBtn.textContent = 'Next \u2192';
             nextBtn.addEventListener('click', () => {
                 const activeCodes = toggles
                     .filter(b => b.classList.contains('selected'))
@@ -477,75 +584,91 @@ function showOnboardingStep4() {
                 .then(data => {
                     if (data.ok) {
                         onboardingData.activeTests = activeCodes;
-                        showOnboardingStep5();
+                        obGoScreen6();
                     }
                 });
             });
             actions.appendChild(nextBtn);
-            wizard.appendChild(actions);
+            wiz.appendChild(actions);
         });
 }
 
-// ----- Step 5: Create Operators -----
+// ==========================================
+//  SCREEN 6: Your Team
+// ==========================================
+function obGoScreen6() {
+    const wiz = obReset();
+    renderObDots(wiz, 6);
 
-function showOnboardingStep5() {
-    const wizard = document.getElementById('onboardingWizard');
-    renderStepHeader(wizard, 5, 'Create Operators', 'Add at least one supervisor and one technician');
+    const title = document.createElement('div');
+    title.className = 'ob-title';
+    title.textContent = 'Your team';
+    wiz.appendChild(title);
 
-    const content = document.createElement('div');
-    content.className = 'wiz-form';
+    const sub = document.createElement('div');
+    sub.className = 'ob-subtitle';
+    sub.textContent = 'Add at least one supervisor and one technician';
+    wiz.appendChild(sub);
 
-    // Created operators list
-    const createdList = document.createElement('div');
-    createdList.className = 'created-operators';
-    createdList.id = 'createdOperatorsList';
-    content.appendChild(createdList);
+    const layout = document.createElement('div');
+    layout.className = 'ob-team-layout';
 
-    // Render already-created operators
-    function renderCreatedList() {
-        createdList.innerHTML = '';
+    // Pills area for created operators
+    const pills = document.createElement('div');
+    pills.className = 'ob-pills';
+    pills.id = 'obPills';
+    layout.appendChild(pills);
+
+    function renderPills() {
+        pills.innerHTML = '';
         onboardingData.createdOperators.forEach(op => {
-            const row = document.createElement('div');
-            row.className = 'created-op';
-            row.innerHTML = '<span class="op-name">' + op.name + '</span>' +
-                '<span class="op-badge ' + (op.level === 2 ? 'sup' : 'tech') + '">' +
-                (op.level === 2 ? 'Supervisor' : 'Technician') + '</span>';
-            createdList.appendChild(row);
+            const pill = document.createElement('span');
+            pill.className = 'ob-pill ' + (op.level === 2 ? 'sup' : 'tech');
+            pill.textContent = op.name + ' \u00b7 ' + (op.level === 2 ? 'Sup' : 'Tech');
+            pills.appendChild(pill);
         });
     }
-    renderCreatedList();
+    renderPills();
 
-    // Operator form card
-    function createOperatorForm(level) {
+    // Operator form builder
+    function buildOpForm(level) {
         const card = document.createElement('div');
-        card.className = 'operator-card';
+        card.className = 'ob-op-card';
 
         const header = document.createElement('div');
-        header.className = 'op-header';
-        const title = document.createElement('div');
-        title.style.fontWeight = '700';
-        title.textContent = level === 2 ? 'Add Supervisor' : 'Add Technician';
-        header.appendChild(title);
+        header.className = 'ob-op-card-header';
+        const cardTitle = document.createElement('div');
+        cardTitle.className = 'ob-op-card-title';
+        cardTitle.textContent = level === 2 ? 'Add Supervisor' : 'Add Technician';
+        header.appendChild(cardTitle);
         const badge = document.createElement('span');
-        badge.className = 'op-level-badge level-' + level;
-        badge.textContent = 'Level ' + level;
+        badge.className = 'ob-level-badge level-' + level;
+        badge.textContent = 'L' + level;
         header.appendChild(badge);
         card.appendChild(header);
 
-        const nameInput = createInput({ placeholder: 'Operator name' });
-        card.appendChild(createField('Name', nameInput));
+        const nameInput = document.createElement('input');
+        nameInput.placeholder = 'Name';
+        nameInput.type = 'text';
+        card.appendChild(nameInput);
 
-        const pinInput = createInput({ placeholder: '4-8 digits', type: 'password' });
+        const pinInput = document.createElement('input');
+        pinInput.placeholder = 'PIN (4-8 digits)';
+        pinInput.type = 'password';
         pinInput.inputMode = 'numeric';
         pinInput.pattern = '[0-9]*';
         pinInput.maxLength = 8;
-        card.appendChild(createField('PIN', pinInput));
+        card.appendChild(pinInput);
+
+        const errMsg = document.createElement('div');
+        errMsg.style.cssText = 'font-size:12px;color:var(--danger);margin-bottom:8px;display:none';
+        card.appendChild(errMsg);
 
         const addBtn = document.createElement('button');
-        addBtn.className = 'wiz-btn wiz-btn-confirm';
+        addBtn.className = 'ob-op-add';
         addBtn.textContent = 'Add';
-        addBtn.style.width = '100%';
         addBtn.addEventListener('click', () => {
+            errMsg.style.display = 'none';
             const name = nameInput.value.trim();
             const pin = pinInput.value.trim();
             if (!name) { nameInput.focus(); return; }
@@ -562,127 +685,131 @@ function showOnboardingStep5() {
                 },
                 body: JSON.stringify({ name: name, pin: pin, level: level })
             })
-            .then(r => r.json())
-            .then(data => {
+            .then(r => r.json().then(d => ({ status: r.status, data: d })))
+            .then(({ status, data }) => {
                 if (data.id) {
                     onboardingData.createdOperators.push({ name: data.name, level: data.level });
                     nameInput.value = '';
                     pinInput.value = '';
-                    renderCreatedList();
+                    renderPills();
                     updateNextBtn();
+                } else {
+                    errMsg.textContent = data.error || 'Could not create operator';
+                    errMsg.style.display = 'block';
                 }
             });
         });
         card.appendChild(addBtn);
-
         return card;
     }
 
-    content.appendChild(createOperatorForm(2));
-    content.appendChild(createOperatorForm(1));
+    const grid = document.createElement('div');
+    grid.className = 'ob-team-grid';
+    grid.appendChild(buildOpForm(2));
+    grid.appendChild(buildOpForm(1));
+    layout.appendChild(grid);
 
-    wizard.appendChild(content);
-
-    // Actions
+    // Navigation
     const actions = document.createElement('div');
-    actions.className = 'wiz-actions';
+    actions.className = 'ob-actions';
 
     const backBtn = document.createElement('button');
-    backBtn.className = 'wiz-btn wiz-btn-back';
-    backBtn.textContent = 'Back';
-    backBtn.addEventListener('click', showOnboardingStep4);
+    backBtn.className = 'ob-back';
+    backBtn.textContent = '\u2190 Back';
+    backBtn.addEventListener('click', obGoScreen5);
     actions.appendChild(backBtn);
 
     const nextBtn = document.createElement('button');
-    nextBtn.className = 'wiz-btn wiz-btn-next';
-    nextBtn.textContent = 'Next';
-    nextBtn.id = 'wizStep5Next';
+    nextBtn.className = 'ob-btn ob-btn-primary';
+    nextBtn.textContent = 'Next \u2192';
+    nextBtn.id = 'obTeamNext';
 
     function updateNextBtn() {
         const hasSup = onboardingData.createdOperators.some(o => o.level === 2);
         const hasTech = onboardingData.createdOperators.some(o => o.level === 1);
         nextBtn.disabled = !(hasSup && hasTech);
-        nextBtn.style.opacity = (hasSup && hasTech) ? '1' : '0.4';
     }
     updateNextBtn();
 
     nextBtn.addEventListener('click', () => {
         if (nextBtn.disabled) return;
-        showOnboardingStep6();
+        obGoScreen7();
     });
     actions.appendChild(nextBtn);
+    actions.appendChild(nextBtn);
+    layout.appendChild(actions);
 
-    // Skip option
     const skipBtn = document.createElement('button');
-    skipBtn.className = 'wiz-btn wiz-btn-cancel';
-    skipBtn.textContent = 'Skip';
-    skipBtn.style.fontSize = '13px';
-    skipBtn.style.minWidth = '60px';
-    skipBtn.style.maxWidth = '80px';
-    skipBtn.addEventListener('click', showOnboardingStep6);
-    actions.appendChild(skipBtn);
+    skipBtn.className = 'ob-skip';
+    skipBtn.textContent = 'Skip for now';
+    skipBtn.addEventListener('click', obGoScreen7);
+    layout.appendChild(skipBtn);
 
-    wizard.appendChild(actions);
+    wiz.appendChild(layout);
 }
 
-// ----- Step 6: Complete -----
+// ==========================================
+//  SCREEN 7: Ready!
+// ==========================================
+function obGoScreen7() {
+    const wiz = obReset();
+    // No dots on final screen
 
-function showOnboardingStep6() {
-    const wizard = document.getElementById('onboardingWizard');
-    renderStepHeader(wizard, 6, 'Setup Complete', 'Your laboratory is ready');
+    // Animated checkmark SVG
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 52 52');
+    svg.className.baseVal = 'ob-check-circle';
+    svg.innerHTML = '<circle cx="26" cy="26" r="25"/><polyline points="16 27 22 33 36 19"/>';
+    wiz.appendChild(svg);
 
-    const recap = document.createElement('div');
-    recap.className = 'recap-section';
+    const siteName = onboardingData.siteConfig.site_name || 'Your laboratory';
+    const title = document.createElement('div');
+    title.className = 'ob-title';
+    title.textContent = siteName + ' is ready';
+    wiz.appendChild(title);
 
-    const siteName = onboardingData.siteConfig.site_name || 'Laboratory';
-    const testCount = onboardingData.activeTests.length || '—';
+    const sub = document.createElement('div');
+    sub.className = 'ob-subtitle';
+    sub.style.marginBottom = '20px';
+    const siteCode = onboardingData.siteConfig.site_code || '\u2014';
+    const testCount = onboardingData.activeTests.length;
     const opCount = onboardingData.createdOperators.length;
+    sub.innerHTML = 'Site code: <strong>' + escapeHtml(siteCode) + '</strong><br>' +
+        testCount + ' active test' + (testCount !== 1 ? 's' : '') + '<br>' +
+        opCount + ' operator' + (opCount !== 1 ? 's' : '') + ' created';
+    wiz.appendChild(sub);
 
+    // Recap
+    const recap = document.createElement('div');
+    recap.className = 'ob-recap';
     const rows = [
         ['Site', siteName],
-        ['Site Code', onboardingData.siteConfig.site_code || '—'],
-        ['Country', onboardingData.siteConfig.country || '—'],
-        ['Active Tests', testCount],
-        ['Operators Created', opCount]
+        ['Code', siteCode],
+        ['Country', onboardingData.siteConfig.country || '\u2014'],
+        ['Tests', testCount],
+        ['Operators', opCount + 1] // +1 for admin
     ];
-
     rows.forEach(([label, value]) => {
         const row = document.createElement('div');
-        row.className = 'recap-row';
-        row.innerHTML = '<span class="recap-label">' + label + '</span><span class="recap-value">' + value + '</span>';
+        row.className = 'ob-recap-row';
+        row.innerHTML = '<span class="ob-recap-label">' + escapeHtml(String(label)) + '</span><span class="ob-recap-value">' + escapeHtml(String(value)) + '</span>';
         recap.appendChild(row);
     });
-    wizard.appendChild(recap);
+    wiz.appendChild(recap);
 
-    // Operator list in recap
-    if (onboardingData.createdOperators.length > 0) {
-        const opList = document.createElement('div');
-        opList.className = 'created-operators';
-        onboardingData.createdOperators.forEach(op => {
-            const row = document.createElement('div');
-            row.className = 'created-op';
-            row.innerHTML = '<span class="op-name">' + op.name + '</span>' +
-                '<span class="op-badge ' + (op.level === 2 ? 'sup' : 'tech') + '">' +
-                (op.level === 2 ? 'Supervisor' : 'Technician') + '</span>';
-            opList.appendChild(row);
-        });
-        wizard.appendChild(opList);
-    }
-
-    // Start button
-    const actions = document.createElement('div');
-    actions.className = 'wiz-actions';
     const startBtn = document.createElement('button');
-    startBtn.className = 'wiz-btn wiz-btn-start';
-    startBtn.textContent = 'Start using Liminal';
+    startBtn.className = 'ob-btn ob-btn-green';
+    startBtn.textContent = 'Start using Liminal \u2192';
     startBtn.addEventListener('click', () => {
-        wizard.style.display = 'none';
+        wiz.style.display = 'none';
         document.getElementById('pinPad').style.display = '';
+        // Restore demo hint
+        var hint = document.querySelector('.pin-demo-hint');
+        if (hint) hint.style.display = '';
         hideNumpad();
         window.location.href = '/register';
     });
-    actions.appendChild(startBtn);
-    wizard.appendChild(actions);
+    wiz.appendChild(startBtn);
 }
 
 // ===== DURESS MODE =====

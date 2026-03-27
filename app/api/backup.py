@@ -7,6 +7,7 @@ import sqlite3
 from datetime import datetime
 from flask import Blueprint, request, jsonify, current_app, send_from_directory
 from app.auth import get_current_operator_name
+from app.audit import log_action
 from app.db import get_db
 
 bp = Blueprint('backup', __name__)
@@ -33,13 +34,10 @@ def create_backup():
     shutil.copy2(db_path, dest)
     size = os.path.getsize(dest)
 
-    # Log the backup action directly (no compute_hash since there's no backup table)
     db = get_db()
-    operator = get_current_operator_name()
-    db.execute('''INSERT INTO audit_log
-        (action, table_name, record_id, field_name, old_value, new_value, operator)
-        VALUES (?, ?, ?, ?, ?, ?, ?)''',
-        ('BACKUP', 'system', 0, 'filename', None, filename, operator))
+    log_action(db, 'BACKUP', 'system', 0,
+               [('filename', None, filename)],
+               get_current_operator_name())
     db.commit()
 
     return jsonify({'filename': filename, 'size': size}), 201
@@ -117,6 +115,13 @@ def restore_backup():
         now = datetime.now()
         auto_name = f"lab_{now.strftime('%Y-%m-%d_%H%M')}_prerestore.db"
         shutil.copy2(db_path, os.path.join(backup_dir, auto_name))
+
+    # Log restore action before replacing the DB
+    db = get_db()
+    log_action(db, 'RESTORE', 'system', 0,
+               [('filename', None, file.filename)],
+               get_current_operator_name())
+    db.commit()
 
     # Replace current DB
     shutil.move(tmp_path, db_path)
