@@ -1628,15 +1628,20 @@ function collectPayload() {
 }
 
 function submitPayload(payload) {
-    authFetch(`/api/register/entries/${currentEntryId}/results`, {
+    fetch(`/api/register/entries/${currentEntryId}/results`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Operator-Pin': currentPin || ''
+        },
         body: JSON.stringify(payload)
     }).then(r => {
         if (r.ok) {
             closeResultModal();
             showSuccess(getCurrentLang() === 'fr' ? 'Sauvegarde' : 'Saved');
             if (isRegisterMode) loadEntries();
+        } else {
+            r.json().then(d => alert(d.error || 'Save failed'));
         }
     });
 }
