@@ -123,18 +123,43 @@ function pinProtect(callback) {
     });
 }
 
+// ===== SESSION =====
+
+let sessionPin = null;
+let sessionLevel = 0;
+let sessionExpiry = 0;
+const SESSION_TTL = 15 * 60 * 1000; // 15 minutes
+
+function setSession(pin, level) {
+    sessionPin = pin;
+    sessionLevel = level || 0;
+    sessionExpiry = Date.now() + SESSION_TTL;
+}
+
+function getSessionPin() {
+    if (sessionPin && Date.now() < sessionExpiry) return sessionPin;
+    sessionPin = null;
+    sessionLevel = 0;
+    return null;
+}
+
 // ===== AUTH FETCH WRAPPER =====
 
 function authFetch(url, options) {
     options = options || {};
+    const method = (options.method || 'GET').toUpperCase();
+    const isWrite = method !== 'GET';
+
     return new Promise((resolve) => {
         const doFetch = (pin) => {
             options.headers = options.headers || {};
             options.headers['X-Operator-Pin'] = pin;
             fetch(url, options).then(r => {
                 if (r.status === 401 || r.status === 403) {
+                    // Clear session on auth failure
+                    sessionPin = null;
                     r.json().then(data => {
-                        showNumpad(doFetch, data.error || 'Authentication required');
+                        showNumpad(doFetchAndSave, data.error || 'Authentication required');
                     });
                 } else {
                     resolve(r);
@@ -142,8 +167,28 @@ function authFetch(url, options) {
             });
         };
 
-        // Always prompt for PIN on protected actions
-        showNumpad(doFetch);
+        const doFetchAndSave = (pin) => {
+            // Verify PIN and cache session
+            fetch('/api/auth/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin: pin })
+            }).then(r => r.json()).then(data => {
+                if (data.id) {
+                    setSession(pin, data.level);
+                }
+            });
+            doFetch(pin);
+        };
+
+        // Read: use cached session if valid
+        if (!isWrite) {
+            const cached = getSessionPin();
+            if (cached) { doFetch(cached); return; }
+        }
+
+        // Write or no session: prompt PIN
+        showNumpad(doFetchAndSave);
     });
 }
 
@@ -313,8 +358,22 @@ function showDuressScreen() {
 // ===== NAV UNLOCK =====
 
 function unlockNav() {
+    // Use session if valid
+    const cached = getSessionPin();
+    if (cached && currentLevel > 0) {
+        applyNavUnlock();
+        return;
+    }
     showNumpad(pin => {
         currentPin = pin;
+        // Verify and cache session
+        fetch('/api/auth/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pin: pin })
+        }).then(r => r.json()).then(data => {
+            if (data.id) setSession(pin, data.level);
+        });
         applyNavUnlock();
     }, 'Enter PIN to unlock');
 }

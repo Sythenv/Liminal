@@ -150,6 +150,17 @@ def create_unit():
                [('unit_number', None, unit_number), ('blood_group', None, blood_group)],
                get_current_operator_name())
 
+    # Auto-discard if any screening is positive
+    screening_fields = ['screening_hiv', 'screening_hbv', 'screening_hcv', 'screening_syphilis']
+    pos_fields = [f for f in screening_fields if data.get(f) == 'POS']
+    if pos_fields:
+        db.execute("UPDATE blood_unit SET status = 'DISCARDED', updated_at = datetime('now') WHERE id = ?",
+                   (unit_id,))
+        log_action(db, 'UPDATE', 'blood_unit', unit_id,
+                   [('status', 'AVAILABLE', 'DISCARDED')] +
+                   [(f, None, 'POS') for f in pos_fields],
+                   get_current_operator_name())
+
     db.commit()
     unit = db.execute('SELECT * FROM blood_unit WHERE id = ?', (unit_id,)).fetchone()
     return jsonify(dict(unit)), 201
@@ -169,12 +180,39 @@ def update_unit(unit_id):
     if new_status and new_status not in ALLOWED_UNIT_STATUS:
         return jsonify({'error': 'Invalid status'}), 400
 
+    changes = []
+
+    # Update screening results
+    screening_fields = ['screening_hiv', 'screening_hbv', 'screening_hcv', 'screening_syphilis']
+    has_pos = False
+    for field in screening_fields:
+        if field in data:
+            val = data[field]
+            if val and val not in ('POS', 'NEG'):
+                return jsonify({'error': f'Invalid {field} value'}), 400
+            old_val = current[field]
+            if val != old_val:
+                db.execute(f"UPDATE blood_unit SET {field} = ?, updated_at = datetime('now') WHERE id = ?",
+                           (val, unit_id))
+                changes.append((field, old_val, val))
+            if val == 'POS':
+                has_pos = True
+
+    # Auto-discard if any screening is now positive
+    if has_pos and current['status'] != 'DISCARDED':
+        new_status = 'DISCARDED'
+
+    if new_status and new_status not in ALLOWED_UNIT_STATUS:
+        return jsonify({'error': 'Invalid status'}), 400
+
     if new_status:
         old_status = current['status']
         db.execute("UPDATE blood_unit SET status = ?, updated_at = datetime('now') WHERE id = ?",
                    (new_status, unit_id))
-        log_action(db, 'UPDATE', 'blood_unit', unit_id,
-                   [('status', old_status, new_status)],
+        changes.append(('status', old_status, new_status))
+
+    if changes:
+        log_action(db, 'UPDATE', 'blood_unit', unit_id, changes,
                    get_current_operator_name())
 
     db.commit()
@@ -218,6 +256,8 @@ def create_transfusion():
     crossmatch = data.get('crossmatch_result')
     if crossmatch and crossmatch not in ('COMPATIBLE', 'INCOMPATIBLE'):
         return jsonify({'error': 'Invalid crossmatch result'}), 400
+    if crossmatch == 'INCOMPATIBLE':
+        return jsonify({'error': 'Cannot issue unit with incompatible crossmatch'}), 400
 
     db.execute('''INSERT INTO transfusion_record
         (unit_id, patient_name, patient_id, patient_blood_group, crossmatch_result,

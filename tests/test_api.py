@@ -226,6 +226,34 @@ class TestBloodBankAPI:
         assert resp.status_code == 201
         assert resp.get_json()['status'] == 'AVAILABLE'
 
+    def test_create_unit_pos_screening_auto_discards(self, client):
+        dr = client.post('/api/bloodbank/donors', json={
+            'name': 'Donor POS', 'blood_group': 'B+'
+        }).get_json()
+        resp = client.post('/api/bloodbank/units', json={
+            'donor_id': dr['id'], 'blood_group': 'B+',
+            'screening_hiv': 'POS', 'screening_hbv': 'NEG',
+            'screening_hcv': 'NEG', 'screening_syphilis': 'NEG'
+        })
+        assert resp.status_code == 201
+        assert resp.get_json()['status'] == 'DISCARDED'
+
+    def test_update_screening_pos_auto_discards(self, client):
+        dr = client.post('/api/bloodbank/donors', json={
+            'name': 'Donor Update', 'blood_group': 'A-'
+        }).get_json()
+        unit = client.post('/api/bloodbank/units', json={
+            'donor_id': dr['id'], 'blood_group': 'A-',
+            'screening_hiv': 'NEG', 'screening_hbv': 'NEG',
+            'screening_hcv': 'NEG', 'screening_syphilis': 'NEG'
+        }).get_json()
+        assert unit['status'] == 'AVAILABLE'
+        resp = client.put(f'/api/bloodbank/units/{unit["id"]}', json={
+            'screening_hcv': 'POS'
+        })
+        assert resp.status_code == 200
+        assert resp.get_json()['status'] == 'DISCARDED'
+
     def test_issue_transfusion(self, client):
         dr = client.post('/api/bloodbank/donors', json={
             'name': 'Donor', 'blood_group': 'O+'
@@ -241,6 +269,21 @@ class TestBloodBankAPI:
             'issued_to_ward': 'ER'
         })
         assert resp.status_code == 201
+
+    def test_issue_incompatible_crossmatch_blocked(self, client):
+        dr = client.post('/api/bloodbank/donors', json={
+            'name': 'Donor XM', 'blood_group': 'AB+'
+        }).get_json()
+        unit = client.post('/api/bloodbank/units', json={
+            'donor_id': dr['id'], 'blood_group': 'AB+'
+        }).get_json()
+        resp = client.post('/api/bloodbank/transfusions', json={
+            'unit_id': unit['id'],
+            'patient_name': 'Patient XM',
+            'crossmatch_result': 'INCOMPATIBLE'
+        })
+        assert resp.status_code == 400
+        assert 'incompatible' in resp.get_json()['error'].lower()
 
 
 class TestEquipmentAPI:

@@ -1619,7 +1619,7 @@ h2 { color: var(--primary); margin: 20px 0 16px; font-size: 20px; }
 .pin-logo {
     width: 420px;
     opacity: 0.8;
-    margin-bottom: 56px;
+    margin-bottom: 16px;
 }
 .pin-container {
     background: transparent;
@@ -1710,6 +1710,72 @@ h2 { color: var(--primary); margin: 20px 0 16px; font-size: 20px; }
 }
 .pin-key-ok:hover { background: #444; box-shadow: 0 3px 12px rgba(0,0,0,0.15); }
 .pin-key-ok:active { transform: scale(0.98); }
+/* Donor card */
+.donor-card { padding: 12px 14px; }
+.donor-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.donor-bg-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: var(--primary);
+    color: var(--white);
+    font-size: 15px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    letter-spacing: -0.5px;
+}
+.donor-info { flex: 1; min-width: 0; }
+.donor-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.donor-meta {
+    font-size: 12px;
+    color: var(--gray);
+    margin-top: 2px;
+    font-family: monospace;
+}
+.donor-barcode {
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+/* Footer */
+.app-footer {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    padding: 4px 10px;
+    z-index: 10;
+}
+.app-footer .version {
+    font-size: 10px;
+    color: #bbb;
+    font-family: monospace;
+}
+
+.pin-demo-hint {
+    margin-top: 16px;
+    font-size: 11px;
+    color: #666;
+    letter-spacing: 0.3px;
+}
+.pin-demo-hint span {
+    font-family: 'SF Mono', 'Consolas', monospace;
+    font-weight: 600;
+    color: #999;
+}
 .setup-fields {
     margin-bottom: 20px;
     text-align: left;

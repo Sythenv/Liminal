@@ -4,9 +4,12 @@ import os
 import json
 from flask import Flask, redirect, url_for, request, jsonify
 
+__version__ = 'dev'
+
 
 def create_app(config_path=None):
     app = Flask(__name__)
+    app.config['VERSION'] = __version__
 
     # Load site config
     if config_path is None:

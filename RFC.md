@@ -1,262 +1,296 @@
-# RFC - Liminal Roadmap
+# RFC — Liminal Operational Roadmap
 
-## Priority 1: Reporting Module
-**Why:** The core pain point. Raw Excel export exists but coordination/MTL need formatted monthly reports (sitrep). Without this, we digitized the notebook but didn't solve the reporting problem.
-- Monthly sitrep generation (volumes by test, by ward, by period)
-- Positivity rates (malaria RDT, HIV, etc.)
-- Turnaround time metrics (reception to result)
-- Exportable as Excel/PDF matching organizational sitrep format
-- Dashboard view for supervisor (today's stats, pending results)
+## État des lieux
 
-## Priority 2: Blood Bank Module
-**Why:** Explicitly requested. Site processes ~250 bags/month, ~320 transfusions/month. Currently paper-only.
-- Donor register (donor info, screening, blood group, donation history)
-- Blood unit inventory (stock, expiry tracking, status: available/reserved/issued/expired)
-- Transfusion register (crossmatch, issue, adverse reaction tracking)
-- Deterministic UI: donor eligibility checklist as guided flow, not free text
+### Ce qui fonctionne (testé, déployable)
+- **Registre labo** : wizard 3 étapes, lab_number auto, statuts REGISTERED→REVIEW→COMPLETED
+- **Saisie résultats** : tests simples (POS/NEG), numériques, structurés (NFS, ECBU, goutte épaisse)
+- **Validation** : table superviseur, contexte (TAT, historique patient, panic), four-eyes enforced
+- **Banque de sang** : schéma complet (donneurs, poches, transfusions), UI fonctionnelle
+- **Équipements** : registre WHO LQSI, log maintenance (préventif/correctif/étalonnage)
+- **Rapports** : PDF mensuel (volumes, positivité, TAT, par service)
+- **Export** : Excel/CSV avec filtre date
+- **Sécurité** : PIN 3 niveaux, audit trail SHA256, chiffrement AES-256 donneurs, duress PIN
+- **Auth** : middleware ROUTE_LEVELS, setup first-run, gestion opérateurs
+- **Release** : kits standalone Linux+Windows (Python embarqué, 0 dépendance, clé USB ready)
 
-## Priority 3: Deterministic UX Improvements (organizational QA Manual alignment)
-**Why:** Operators have minimal training. System must make it hard to do the wrong thing.
-- Rejection reasons as constrained dropdown (hemolyzed, clotted, QNS, unlabelled, wrong container, inadequate volume, improper sampling, sample too old, IV access site)
-- Panic values: add panic_low/panic_high on test_definition, block result validation with explicit confirmation when out of range
-- Collection time field (separate from reception time, per organizational 6.3)
-- Result status: preliminary vs final (per organizational report form requirements)
-- Guided workflow: registration -> IQC check prompt -> result entry -> review -> release
-- Impossible to skip steps (no result without registration, no release without review)
+### Ce qui manque pour le terrain
 
-## Priority 4: Equipment & Maintenance Module
-**Why:** Explicitly requested. WHO LQSI template provides the standard structure.
-- Equipment register with WHO categories (25 predefined: Freezer, Microscope, Centrifuge, etc.)
-- Fields from WHO template: category, label, serial, manufacturer, purchase date, location, physical condition (Good/Fair/Poor/Out of service), service provider, maintenance frequency (weekly/monthly/quarterly/yearly)
-- Maintenance log per equipment (preventive/corrective/calibration)
-- Automated reminders when maintenance is overdue
-- Deterministic: all fields are dropdowns or constrained inputs, no free text for category/condition/frequency
+| Fonction | Impact | Statut |
+|----------|--------|--------|
+| Backup/restore UI | Perte de données si crash | Absent |
+| Onboarding first-run | Confusion jour 1 | Absent |
+| IQC (contrôle qualité) | Résultats non vérifiables | Schéma DB uniquement |
+| i18n FR/AR complète | Barrière langue | EN seul |
+| Impression étiquettes/résultats | Transition papier impossible | Absent |
+| Sync multi-site (HQ ↔ terrain) | HQ aveugle | Absent |
+| PIN sur lectures inutiles | PIN demandé pour naviguer/consulter | À auditer |
+| Config UI (tests, seuils, services) | Nécessite accès DB direct | Absent |
 
-## Priority 5: IQC Module
-**Why:** organizational QA Manual Ch. 5.3 requires IQC daily before patient samples. Currently paper-only.
-- QC targets per test/instrument (material, lot, expiry, mean, SD, acceptable range)
-- Daily QC result entry with pass/fail
-- Westgard rule violation detection (1-2s, 1-3s, 2-2s, R-4s, 4-1s, 10x)
-- Levey-Jennings chart visualization
-- Block patient result entry if daily IQC not passed
-- QC workbook export (per organizational 6.7)
+---
 
-## Priority 6: Data Exchange (HQ ↔ Field)
-**Why:** Data needs to flow both ways — aggregated reports up to coordination, config updates down to field sites. Direct API sync (SharePoint/DHIS2) is unreliable on intermittent connectivity.
+## P0 — Prérequis déploiement (bloquants)
 
-**Upward (field → HQ):**
-- Supervisor-triggered export (not auto-sync that fails silently)
-- Signed JSON/CSV bundle (data + SHA256 hash for integrity verification)
-- Includes: monthly aggregates, audit trail summary, stock levels, equipment status
-- Exportable to USB/email attachment for manual upload when connectivity allows
+### P0.1 Backup & Restore
+**Why:** Si le laptop tombe, toutes les données sont perdues. Inacceptable en contexte médical.
+- Bouton "Backup Now" dans l'UI admin → copie `lab.db` horodatée dans `data/backups/`
+- Option export vers clé USB (copie dans un chemin sélectionné)
+- Restore : upload d'un fichier `.db`, vérification intégrité, remplacement
+- Backup automatique quotidien (rotation 7 jours)
+- Chiffrement optionnel du backup (AES, clé dérivée du PIN L3)
 
-**Downward (HQ → field):**
-- Config update file (`config-update.json`): test menu changes, panic values, reference ranges, site name/code
-- Supervisor imports via Settings page (file upload → validate → apply)
-- Software updates: new version folder replaces old one (portable app model)
+### P0.2 Onboarding first-run
+**Why:** Le déployeur (MIO) n'est pas développeur. Le setup doit être guidé.
+- Après création du PIN admin → wizard config :
+  1. Nom du site, code site, pays
+  2. Langue par défaut (EN/FR/AR)
+  3. Tests actifs sur ce site (checklist depuis seed_tests.json)
+  4. Création d'au moins 1 opérateur L1 et 1 superviseur L2
+- Message d'accueil expliquant les 3 niveaux et le fonctionnement du PIN
+- Mode démo optionnel (sample fictif pour tester le flow)
 
-**Not in scope for MVP:**
-- Direct SharePoint/DHIS2 API integration (requires stable VPN + OAuth)
-- Real-time sync (conflict resolution is complex for offline-first)
-- Push notifications from HQ
+### P0.3 PIN = signature d'écriture, pas login
+**Why:** Le PIN signe chaque action dans l'audit trail (ISO 15189 §5.9.3). C'est la preuve de qui a fait quoi. Pas un mécanisme de session.
+- **PIN demandé** : toute écriture sur le registre (register, save results, validate, reject, issue blood, log maintenance, modifier config)
+- **Pas de PIN** : navigation, consultation, recherche patient, vue stock, lecture audit trail
+- Les routes GET restent protégées par niveau (L1/L2/L3 via ROUTE_LEVELS) mais sans re-saisie PIN
+- Vérifier que l'implémentation actuelle ne demande pas le PIN pour les actions de lecture pure
 
-## Priority 7: Instrument Connectivity
-**Why:** 80/20 approach. Most results are manual entry, but some analyzers support ASTM/serial.
-- Humalyzer 4000: RS232/ASTM
-- Sysmex: ASTM/HL7
-- GeneXpert: CSV import
-- Hemocue: manual (no LIS interface on most models)
+### P0.4 Version et numéro de build
+**Why:** Le terrain doit pouvoir dire "j'ai la version X" quand il signale un bug.
+- Afficher `vX.Y.Z` dans le footer
+- Injecter depuis le tag git au build (CI)
+- Endpoint `/api/version` pour diagnostic à distance
 
-## Security Tier 2: Audit Trail & Data Integrity
-- audit_log table: who, what, when, old value, new value
-- SHA256 hash per record for tamper detection
-- Weekly backup reminder/automation
+---
 
-## Security Tier 3: Access Control + PIN Integrity
+## P1 — Qualité résultats
 
-### Threat model
-- Operator may be coerced or malicious (hostile actor demands patient HIV status)
-- Laptop may be seized (data at rest must protect sensitive fields)
-- Donor data is geopolitically sensitive (screening results = stigmatization risk)
-- No reliable network — security cannot depend on connectivity
+### P1.1 Module IQC (contrôle qualité interne)
+**Why:** Manuel QA organisationnel Ch. 5.3 — IQC quotidien obligatoire avant résultats patients.
+- Saisie QC quotidienne par test/instrument (matériel contrôle, lot, valeur mesurée)
+- Pass/fail automatique (valeur dans ±2SD de la cible)
+- Détection violations Westgard (1-2s, 1-3s, 2-2s, R-4s, 4-1s, 10x)
+- **Blocage** : résultats patients refusés si IQC du jour non passé pour ce test
+- Graphique Levey-Jennings (tendance 30 jours)
+- Export cahier QC (format organisationnel 6.7)
 
-### 3 levels
-**Level 1 — Operator (lab technician):**
-- Register samples, enter results
-- View stock (anonymized), log maintenance
-- Navigate days for result entry (delayed results from reference labs)
-- Cannot: validate, export, search globally, access patients list, view donor details, modify config
+### P1.2 Confirmation panic values
+**Why:** Valeurs critiques (HB < 5, K+ > 6.5) doivent être explicitement confirmées, pas juste badgées.
+- Modal de confirmation obligatoire avant sauvegarde d'un résultat panic
+- Champ "panic acknowledged by" dans audit_log
+- Notification visuelle persistante dans la table review pour le superviseur
+- Affichage des intervalles de référence pendant la validation (pas seulement panic)
 
-**Level 2 — Supervisor (lab manager/MTL):**
-- Everything Level 1 +
-- Validate results (four-eyes: validator ≠ person who entered results, asynchronous)
-- Generate reports, export data, search patients
-- View audit trail, reject/unreject
-- Cannot: modify site config, manage test menu, manage operators, view donor names
+### P1.3 Workflow specimen-first
+**Why:** L'opérateur reçoit un tube physique → doit sélectionner le type AVANT les tests.
+- Step 2 du wizard : gros boutons SANG/URINE/SELLES/LCR (avec code couleur tube)
+- Step 3 : tests filtrés par type de spécimen compatible
+- 1 lab_number = 1 spécimen (plusieurs spécimens = plusieurs enregistrements)
 
-**Level 3 — Admin (MIO/siège):**
-- Everything Level 2 +
-- Site config, test menu, operator management
-- Donor register (decrypted names visible)
-- Full audit trail with integrity verification
-- Encryption key derived from this level's PIN
+---
 
-### PIN model — per-action integrity, not session login
-- **Default state: app locked** (PIN screen with numpad)
-- PIN unlocks a **15-minute session** — reading/navigating allowed
-- **Critical actions require PIN re-entry:** register sample, save results, validate, reject, issue blood unit, modify config
-- Each action is cryptographically tied to the operator who entered the PIN
-- No "logged in as" concept — the PIN at the moment of action IS the proof
+## P2 — Transition papier → digital
 
-### Four-eyes validation (asynchronous)
-- Results entered by operator A (PIN A at save)
-- Entry moves to REVIEW
-- Validation requires PIN B where B ≠ A (server-side enforcement)
-- If same PIN → rejected with "Cannot validate your own results"
+### P2.1 Impression étiquettes
+**Why:** Sans étiquettes imprimées, les tubes restent écrits à la main. Pas de transition réelle.
+- Génération feuille A4 avec étiquettes découpables (pas d'imprimante thermique requise)
+- Par étiquette : QR code + lab_number + nom patient + date
+- Batch print : étiquettes du jour
+- Impression depuis le navigateur (CSS @media print)
 
-### PIN storage
-- `operator` table: id, name, pin_hash (SHA256 + salt), level, is_active
-- PIN never stored in clear — hashed with per-operator salt
-- First setup: admin creates their PIN (no default PIN)
-- PIN reset: level 3 can reset level 1-2. Nobody resets level 3 — reinstall required (by design)
+### P2.2 Impression résultats
+**Why:** Le service demandeur a besoin d'un document papier avec les résultats validés.
+- Feuille de résultats imprimable par entrée validée (COMPLETED)
+- Format : en-tête site, patient, tests + résultats + intervalles ref + panic flags
+- Bouton "Imprimer" sur chaque entrée validée
+- CSS @media print (pas de dépendance serveur)
 
-### Sensitive field encryption
-- Donor names and screening results encrypted at application level (AES-256)
-- Encryption key derived from level 3 PIN (PBKDF2)
-- Level 1-2 see donor numbers only (D-xxxx), never decrypted names
-- If laptop seized: DB readable but donor identities are ciphertext
+### P2.3 Étiquettes banque de sang
+**Why:** Guidelines Ch.2 §8.3 — chaque poche doit être étiquetée avec les champs réglementaires.
+- Étiquette par unité : numéro don (code-barres Code 128), date collecte, date péremption
+- Groupe sanguin ajouté après 2e détermination
+- Post-qualification : résultats screening, type composant, volume
+- Aucune info identifiant le donneur sur l'étiquette (§8.2)
 
-### Admin Dashboard (macro view)
-- KPI cards: samples today/week/month, pending results, rejection rate, overdue maintenance
-- Blood bank stock summary (group x status grid)
-- Equipment alerts (overdue maintenance, out of service)
-- Operator activity (who did what today)
-- Audit alerts (integrity failures)
-- Trend sparklines: daily volume 30 days, positivity rates
-- Single page `/dashboard`, accessible Level 3 only
+---
 
-## Architecture: Sync Opportuniste (field ↔ HQ)
+## P3 — Banque de sang (complétion)
 
-### Principle: 100% offline-capable, sync when available
-The LIMS is fully autonomous. No server dependency for any operation. HQ visibility is opportunistic, not required.
+### P3.1 Screening-positive bloque le stock
+**Why:** Un résultat POS (VIH, VHB, VHC, Syphilis) doit auto-discard la poche. Actuellement : aucune automatisation.
+- POS sur n'importe quel screening → statut auto DISCARDED + alerte opérateur
+- Log dans audit_trail
 
-```
-LIMS (terrain)                              HQ (serveur)
-┌──────────────┐                       ┌──────────────┐
-│ SQLite local │  ── when connected ──→ │ Aggregation  │
-│ Key = local  │  ←── when connected ── │ Config push  │
-│ Works offline│                       │ Monitoring   │
-└──────────────┘                       └──────────────┘
-```
+### P3.2 Crossmatch bloque issue incompatible
+**Why:** Si crossmatch = INCOMPATIBLE, le bouton "Issue" doit être désactivé. Actuellement : pas de validation.
 
-### Upward (field → HQ) — when connectivity available
-- Encrypted data bundle: anonymized aggregates, audit trail summary, stock levels
-- Signed with site key for authenticity verification
-- HQ stores but cannot modify field data (append-only)
-- No raw patient data unless level 3 explicitly exports with PIN
+### P3.3 Questionnaire éligibilité donneur
+**Why:** Guidelines Ch.2 §3 — checklist guidée avant collecte.
+- Contre-indications, historique médical, fréquence de don (max 3/an F, 4/an H, min 8 semaines)
+- Consentement éclairé (checkbox + date)
+- Blocage si inéligible
 
-### Downward (HQ → field) — when connectivity available
-- Config updates: test menu, panic values, site settings
-- Operator list updates (add/deactivate operators remotely)
-- Security alerts (force PIN rotation)
-- Supervisor applies manually after verification
+### P3.4 Grille stock résumé
+**Why:** Vue instantanée : groupe sanguin (lignes) x statut (colonnes) avec comptages.
+- Avant la liste de cartes
+- Ex: O+ = 12 dispo, 3 réservés, 2 expirent dans 7j
+- Critique pour savoir ce qui est disponible avant une demande de transfusion
 
-### No connectivity for months: zero impact
-- All operations continue normally
-- Data accumulates locally
-- Next connection: bulk sync catches up
-- No key dependency, no heartbeat requirement, no remote wipe illusion
+### P3.5 Actions sur cartes stock
+**Why:** Les cartes ne sont pas interactives. Pas de workflow de changement de statut.
+- Clic → modal avec actions selon statut : AVAILABLE → [Reserve/Discard/Issue], RESERVED → [Release/Issue]
+- Anonymisation : stock view ne montre que donor_number, jamais le nom
 
-## UX Improvements (field feedback)
-- **Patient entity separation (ISO 15189 §5.4).** Current schema embeds patient info (name, age, sex) directly in lab_register — duplicated on every visit. Correct architecture:
-  - **Step 1: Patient** — search existing patient (autocomplete on name/ID) OR create new. Patient gets a unique patient_number (P-0001). Stores: name, age, dob, sex, contact, village.
-  - **Step 2: Lab Order** — linked to patient via FK. Contains: specimen type, requested tests, collection time, ward, requesting clinician.
-  - Patient history view: click a patient → see all past lab orders and results in chronological order. Enables trend tracking (HB over time).
-  - Schema: new `patient` table, `lab_register.patient_id` FK replaces `patient_name`/`age`/`sex` columns (keep for backward compat, populate from patient record).
-  - Migration path: existing entries create auto-generated patient records from distinct patient_name values.
-- Add date display/picker on patient registration page (Step 1 of wizard)
-- Service (ward) list: validate with field team which services exist on site
-- **Urinalysis: complete 10-parameter dipstick.** Current structured input has 5 params (LEU, NIT, PRO, BLD, GLU). Standard dipstick has 10: add URO (Urobilinogen: NEG/Normal/+/++), BIL (Bilirubin: NEG/+/++/+++), KET (Ketones: NEG/TRACE/+/++/+++), SG (Specific Gravity: numeric 1.000-1.030), pH (numeric 5.0-8.5). Validate with field team which params they actually read — some sites use 5-strip not 10-strip.
-- **Blood Bank: donor anonymization (§1.5, §1.6).** Stock and transfusion views must NOT display donor name — only donor number (D-xxxx). Donor name is only visible in the Donors tab (which should be access-controlled via Tier 3 PIN). Currently `donor_name` is shown on stock cards — must be removed. API `GET /units` should return `donor_number` instead of `donor_name`.
-- **Blood Bank: donor eligibility questionnaire.** Ch.2 §3: guided checklist before collection (contra-indications, medical history, donation frequency — max 3/year women, 4/year men, min 8 weeks interval). Currently no eligibility check.
-- **Blood Bank: informed consent tracking.** Ch.2 §1.3: donor must consent to screening and potential exclusion. Add a consent checkbox/confirmation step before collection. Track consent_date on blood_donor.
-- **Blood Bank: screening-positive blocks stock.** Currently a POS screening (HIV, HBV, HCV, Syphilis) does NOT prevent the unit from being AVAILABLE. A POS result should auto-set status to DISCARDED and alert the operator.
-- **Blood Bank: crossmatch blocks incompatible issue.** Currently INCOMPATIBLE crossmatch does not prevent issuing. If crossmatch = INCOMPATIBLE, the Issue button should be disabled.
-- **Blood Bank: unit status management.** Clicking a stock card should open a modal with actions based on current status: AVAILABLE → [Reserve/Discard/Issue], RESERVED → [Release/Issue], EXPIRED → [Discard]. Currently cards are not interactive.
-- **Blood Bank Stock: "7d left" expiry badge misaligned.** The expiry warning badge is appended inside the card-details div inline with text, causing layout break. Move it to its own line or style as a block-level badge below the details.
-- **Blood Bank Stock: add summary table.** Before the card list, show a recap grid: blood group (rows) x status (columns) with counts. E.g. O+ = 12 available, 3 reserved, 2 expiring. Gives instant visual overview of stock levels. Critical for knowing what's available before a transfusion request comes in.
-- **Button state inconsistency (multi-level fix needed):**
-  - **Level 1 - Convention:** Standardize on ONE class for selected state. Currently register.js uses `.selected`, bloodbank.js uses `.active`, equipment.js uses `.active`. Pick one (`selected`) and align all modules.
-  - **Level 2 - Shared component:** Extract a `createButtonGroup(options, onSelect)` utility function in a shared `components.js`. All button groups (sex, ward, blood group, specimen, screening, crossmatch, maintenance type, equipment category) use the same pattern — they should share the same code instead of reimplementing selection logic per module.
-  - **Level 3 - CSS token:** Single `.btn-group-item.selected` class for all toggle buttons. Remove `.active` variants. One style, one behavior, one source of truth. The BG buttons (A+, A-, B+, etc.) don't register selection when tapped. Debug: check if `selectBG()` is correctly wired via addEventListener, and if the `.bg-btn.active` class is being applied vs `.bg-btn.selected`.
-- **Reports page: generated report overlaps UI.** After generating a PDF report on `/reports`, the result summary and download link overlap with the form. Fix layout/spacing of the export-result div.
-- **Validate Results button non-functional.** The "Validate Results" button appears on REVIEW entries but does nothing in the UI. Debug: check if the `executeValidate()` function is correctly wired, if the API call succeeds, and if the modal closes + reloads after validation.
-- **Wizard flow reorder (specimen-first):** Current flow auto-detects specimen type from tests (confusing). Correct lab workflow: operator receives a physical specimen → selects specimen type (Step 2: big buttons BLOOD/URINE/STOOL/CSF with tube color coding) → tests are filtered by specimen (Step 3: only compatible tests shown). Multiple specimens = multiple registrations (1 lab number per specimen, matches paper register). Removes silent auto-detection logic.
+---
 
-## Barcode / QR Code Integration
-- **Standard retenu : Code 128 HID.** Les scanners USB terrain sont des HID — ils tapent le contenu du code-barres comme un clavier + Enter. Code 128 encode l'alphanumérique (lab_number, donation number). Compatible avec tous les scanners USB terrain ($20).
-- **Accession number = lab_number** — unique ID per act already exists (e.g. LAB-2026-0001). No new numbering scheme needed.
-- **QR Code per sample** — generate QR containing lab_number (+ optional patient_number, date). Displayable in success overlay after registration, printable on A4 label sheet. Scannable by phone camera → opens sample directly in LIMS. Library: `qrcode` (pure Python, SVG output, no system deps).
-- **Printable label sheet** — batch-print labels for day's samples. A4 paper with cut lines, no label printer required. QR + lab_number + patient name + date in each cell.
-- **Blood bank labeling (per guidelines Ch.2 §8.3, NOT ISBT 128).** ISBT 128 requires ICCBBA licensing and is designed for national blood services — overkill for field operations that label bags by hand. Instead, generate a printable label per unit with guideline-mandated fields: donation number (Code 128 barcode), collection date, expiry date. Blood group added after 2nd determination. Post-qualification: screening results, component type, volume. No donor identifying info on the label (§8.2).
-- **Scanner integration** — USB barcode scanners act as keyboard input (HID). No driver/integration needed — scanner types the scanned value into the active search field. Landing page = un champ unique auto-focus, le scanner tape le lab_number + Enter → le flow se déclenche.
-- **Hardware dependency** — QR works without scanner (phone camera). Code 128 needs a dedicated scanner ($20 USB). Label printing works on any printer. No thermal printer required.
+## P4 — Équipements (complétion)
 
-### Questions pour Thomas (matériel terrain)
-- Quels modèles de scanners USB sont disponibles/prévus sur les sites ? (marque, 1D seul ou 1D+2D ?)
-- Quelles imprimantes sont sur site ? (jet d'encre, laser, thermique ?) Format papier disponible (A4, étiquettes pré-découpées type Avery ?)
-- Les tubes sont étiquetés comment aujourd'hui ? (écriture manuelle, étiquette pré-imprimée, autre ?)
-- Volume quotidien d'étiquettes à imprimer ? (pour savoir si batch A4 suffit ou si thermique est nécessaire)
-- Les poches de sang sont étiquetées comment actuellement ? (étiquette manuelle, pré-imprimée fournisseur ?)
+### P4.1 Rappels maintenance
+**Why:** RFC existant demande "automated reminders when maintenance is overdue". Absent.
+- Badge alerte si `next_scheduled < today`
+- Liste des équipements en retard sur le dashboard superviseur
+- Notification visuelle au login
 
-## Equipment UX
-- **Equipment: cards not interactive.** Clicking an equipment card shows maintenance log below but doesn't allow editing the equipment itself. Need a modal on card click with: edit fields (name, model, location, etc.), change physical condition (Good/Fair/Poor/Out of service buttons), deactivate/reactivate toggle. All changes logged to audit trail.
-- **Equipment: ownership/acquisition type.** Add constrained field: OWNED / LEASED / DONATED / BORROWED. Impacts who is responsible for maintenance and replacement. Add to equipment registration form as button group.
-- **Equipment: admin-only access.** Equipment management (add/edit/deactivate) should be restricted to Level 3 operators (admin). Regular operators can view equipment list and log maintenance but not modify the register. Depends on Tier 3 PIN/access control implementation.
-- **Equipment: autocomplete on model/manufacturer from existing entries.** Instead of a static dataset of all lab equipment brands (overkill for 10-20 items per site), offer autocomplete suggestions based on equipment already registered at this site. First entry is free text, subsequent entries suggest existing values. Same pattern as patient name autocomplete. Prevents typo variants ("Olimpus" vs "Olympus") without maintaining an external reference dataset.
+### P4.2 Cartes interactives
+**Why:** Pas d'édition possible après création. Condition physique non modifiable.
+- Clic carte → modal édition (nom, modèle, localisation, condition physique)
+- Boutons condition : Good/Fair/Poor/Out of service
+- Toggle actif/inactif
+- Tout logué dans audit_trail
 
-## Architecture: Code Maintainability
+### P4.3 Propriété / acquisition
+**Why:** Impacts responsabilité maintenance et remplacement.
+- Champ contraint : OWNED / LEASED / DONATED / BORROWED
 
-### JS Split (register.js → 3 files)
-**Why:** register.js is 1300+ lines doing landing, wizard, and results. Hard to maintain, hard to debug.
-- `landing.js` — search, lookup, results dropdown, landing mode logic
-- `wizard.js` — 3-step registration wizard, patient autocomplete, test selection
-- `results.js` — result modal, save, validate, reject, audit trail
-- Zero logic change — cut and move, functions stay identical
-- Load order in register.html: landing.js → wizard.js → results.js
+---
 
-### CSS Split (optional)
-**Why:** style.css is 1500+ lines. Documented sections help but separate files help more.
-- `base.css` — variables, reset, header, nav, typography
-- `landing.css` — landing mode, pitch, search results
-- `register.css` — cards, wizard, results, badges
-- Or keep single file with clear section headers (lower priority)
+## P5 — Configuration UI
 
-### Patient-Centric Architecture
-**Why:** The app is evolving from tube-centric (LIMS) to patient-centric (CRM-like). Patient is now the master entity with lab orders, blood bank, history linked via FK. The search-by-name-or-DOB flow confirms this shift.
-- Dedicated `/patient/{id}` page — not a modal, a full page
-- Shows: demographics, all lab orders chronologically, result trends (HB over time), blood group, transfusion history
-- Replaces the current "open most recent entry" behavior from landing search
-- Security implication: patient page = full history access, needs careful level enforcement
-- This is the feature that transforms LIMS into a patient-centered tool
+### P5.1 Page Settings (admin L3)
+**Why:** Actuellement toute config nécessite accès DB ou API direct.
+- Nom site, code site, pays, langue
+- Liste des tests actifs (toggle on/off)
+- Seuils panic par test (éditable)
+- Liste des services/wards (dropdown contraint, plus de texte libre)
+- Liste des cliniciens demandeurs (autocomplete depuis existants)
 
-## Validation Context (question pour Thomas)
-**Why:** Le superviseur valide des résultats sans contexte. Il voit le résultat mais pas qui l'a saisi, quand, ni l'historique du patient. Il ne peut pas juger si le résultat est plausible.
-- **Qui + quand** : afficher l'opérateur qui a saisi et le timestamp dans le modal de validation
-- **Turnaround time** : temps entre collecte et résultat (un délai long = qualité dégradée)
-- **Historique patient** : les 3 derniers résultats du même patient (trend tracking, détection d'incohérence type HIV NEG après POS)
-- **Panic values** : mettre en évidence visuelle les valeurs critiques dans le modal
-- **IQC du jour** : est-ce que le contrôle qualité du jour a été validé pour cet instrument/test ? (dépend du module IQC, RFC P5)
-- **Question pour Thomas** : de ces éléments, lesquels sont indispensables pour valider ? Lesquels sont "nice to have" ? Y a-t-il d'autres critères de décision qu'on oublie ?
+### P5.2 Import config HQ
+**Why:** HQ doit pouvoir pousser des mises à jour de config aux sites terrain.
+- Upload `config-update.json` sur la page Settings
+- Validation + preview des changements avant application
+- Log dans audit_trail
 
-## Security: Duress PIN
-- Each operator has a secondary "duress PIN" — entered under coercion
-- App appears to function normally but: donor data stays encrypted, patient screens show empty/dummy data, silent DURESS flag in audit_log
-- No visual indication that duress mode is active — attacker sees a working app
-- Standard in physical security (safes, alarm systems) and encrypted volumes (VeraCrypt hidden OS)
-- Implementation: add `duress_pin_hash` + `duress_pin_salt` columns to operator table, check in auth middleware, set `g.duress = True`, filter sensitive data in bloodbank/patient endpoints
+---
 
-## Planned Evolutions
-- Port to Go binary for zero-dependency deployment
-- Automated tests (pytest)
-- README with setup/backup instructions
+## P6 — i18n complet
+
+### P6.1 Traductions FR/AR
+**Why:** Opérateurs terrain francophones/arabophones. EN seul = barrière.
+- Compléter toutes les strings dans i18n.js (FR obligatoire, AR souhaité)
+- Labels formulaires, messages d'erreur, tooltips, boutons
+- Noms de tests bilingues (déjà `name_en`/`name_fr` dans test_definition)
+
+### P6.2 Langue par défaut appliquée
+**Why:** Le bouton langue existe mais le changement ne persiste pas entre pages.
+- Stocker la langue choisie en localStorage
+- Appliquer au chargement de chaque page
+
+---
+
+## P7 — Échange données HQ ↔ terrain
+
+### P7.1 Export signé (terrain → HQ)
+**Why:** HQ a besoin de visibilité. Pas de sync temps réel (pas de réseau fiable).
+- Bouton superviseur : génère un bundle JSON/CSV signé (SHA256)
+- Contenu : agrégats mensuels, résumé audit trail, stock, état équipements
+- Exportable vers USB / email
+- Anonymisé par défaut (pas de noms patients sauf export L3 explicite)
+
+### P7.2 Import config (HQ → terrain)
+- Même que P5.2
+
+---
+
+## P8 — Connectivité instruments
+
+### P8.1 Import CSV GeneXpert
+**Why:** 80/20 — le GeneXpert exporte en CSV. Import le plus simple.
+- Upload CSV → mapping automatique vers test_definition
+- Preview + validation avant import
+- Résultats créés comme si saisis manuellement (même workflow validation)
+
+### P8.2 Interface ASTM (Humalyzer, Sysmex)
+**Why:** RS232/ASTM pour les analyseurs connectés. Plus complexe.
+- Serveur série local écoutant le port COM
+- Parsing ASTM → résultats dans lab_result
+- Scope limité aux 2-3 analyseurs terrain identifiés
+
+---
+
+## Maintenance code (non-bloquant)
+
+### M1 Split register.js
+- `landing.js` — recherche, lookup
+- `wizard.js` — wizard 3 étapes
+- `results.js` — modal résultats, validation, rejet
+- Zero changement logique, découpe uniquement
+
+### M2 Cohérence boutons
+- Standardiser `.selected` (pas `.active`) sur tous les modules
+- Extraire `createButtonGroup()` dans components.js
+
+### M3 Architecture patient-centric
+- Page dédiée `/patient/{id}` (pas modal)
+- Vue chronologique : tous les lab orders, tendances résultats, groupe sanguin, historique transfusions
+- Remplace le comportement "ouvrir l'entrée la plus récente"
+
+---
+
+## Matrice de priorisation
+
+| ID | Fonction | Impact terrain | Effort | Dépendances |
+|----|----------|---------------|--------|-------------|
+| **P0.1** | Backup/Restore | CRITIQUE | 4h | — |
+| **P0.2** | Onboarding | CRITIQUE | 6h | — |
+| **P0.3** | PIN = signature écriture | MOYEN | 2h | Audit auth.py + pin.js |
+| **P0.4** | Version/build | FAIBLE | 30min | CI |
+| **P1.1** | IQC | HAUT | 8h | Schéma DB existant |
+| **P1.2** | Panic confirmation | HAUT | 2h | — |
+| **P1.3** | Specimen-first | MOYEN | 3h | — |
+| **P2.1** | Étiquettes | HAUT | 3h | — |
+| **P2.2** | Impression résultats | HAUT | 2h | — |
+| **P2.3** | Étiquettes sang | MOYEN | 2h | — |
+| **P3.1** | Screening→discard | HAUT | 1h | — |
+| **P3.2** | Crossmatch block | HAUT | 30min | — |
+| **P3.3** | Éligibilité donneur | MOYEN | 4h | — |
+| **P3.4** | Grille stock | MOYEN | 2h | — |
+| **P3.5** | Actions cartes stock | MOYEN | 3h | — |
+| **P4.1** | Rappels maintenance | MOYEN | 2h | — |
+| **P4.2** | Cartes interactives | FAIBLE | 3h | — |
+| **P4.3** | Propriété équip. | FAIBLE | 30min | Migration |
+| **P5.1** | Settings UI | MOYEN | 6h | — |
+| **P5.2** | Import config HQ | FAIBLE | 3h | P5.1 |
+| **P6.1** | Traductions FR/AR | HAUT | 6h | — |
+| **P6.2** | Langue persistante | FAIBLE | 30min | — |
+| **P7.1** | Export signé | MOYEN | 4h | — |
+| **P8.1** | Import GeneXpert | FAIBLE | 3h | — |
+
+## Ordre de marche suggéré
+
+**PRE-RELEASE** : Supprimer les PINs dev hardcodés (0777/0755/0644) — forcer le first-run setup sur chaque déploiement terrain.
+
+**Sprint 1 — MVP terrain** : P0.1, P0.2, P0.3, P0.4, P1.2, P3.1, P3.2
+→ Backup, onboarding, session PIN, version, panic confirm, screening block, crossmatch block
+
+**Sprint 2 — Qualité** : P1.1, P1.3, P6.1, P6.2
+→ IQC complet, specimen-first, i18n français
+
+**Sprint 3 — Papier→digital** : P2.1, P2.2, P2.3, P3.4, P3.5
+→ Impression étiquettes/résultats/sang, stock grid, actions cartes
+
+**Sprint 4 — Config & terrain** : P4.1, P4.2, P5.1, P3.3
+→ Rappels maintenance, cartes interactives, settings UI, éligibilité donneur
+
+**Sprint 5 — HQ** : P5.2, P7.1, P8.1
+→ Import config, export signé, import GeneXpert

@@ -40,7 +40,7 @@ function fabAction() {
 // ===== DONORS =====
 
 function loadDonors() {
-    fetch('/api/bloodbank/donors').then(r => r.json()).then(donors => {
+    authFetch('/api/bloodbank/donors', {}).then(r => r.json()).then(donors => {
         const list = document.getElementById('donorList');
         const empty = document.getElementById('donorEmpty');
         list.innerHTML = '';
@@ -50,33 +50,43 @@ function loadDonors() {
 
         donors.forEach(d => {
             const card = document.createElement('div');
-            card.className = 'sample-card';
+            card.className = 'sample-card donor-card';
 
-            const top = document.createElement('div');
-            top.className = 'card-top';
-            const num = document.createElement('span');
-            num.className = 'card-lab-number';
-            num.textContent = d.donor_number;
-            const bg = document.createElement('span');
-            bg.className = 'card-test-badge has-result';
-            bg.textContent = d.blood_group || '?';
-            top.appendChild(num);
-            top.appendChild(bg);
-            card.appendChild(top);
+            // Top row: blood group badge + donor info
+            const row = document.createElement('div');
+            row.className = 'donor-row';
+
+            const bgBadge = document.createElement('div');
+            bgBadge.className = 'donor-bg-badge';
+            bgBadge.textContent = d.blood_group || '?';
+            row.appendChild(bgBadge);
+
+            const info = document.createElement('div');
+            // (info is appended to row after building its children)
+            info.className = 'donor-info';
 
             const name = document.createElement('div');
-            name.className = 'card-patient';
+            name.className = 'donor-name';
             name.textContent = d.name;
-            card.appendChild(name);
+            info.appendChild(name);
 
-            const details = document.createElement('div');
-            details.className = 'card-details';
-            const parts = [];
-            if (d.age) parts.push(d.age + 'Y');
-            if (d.sex) parts.push(d.sex);
-            if (d.last_donation_date) parts.push('Last: ' + d.last_donation_date);
-            details.textContent = parts.join(' \u00b7 ');
-            card.appendChild(details);
+            const meta = document.createElement('div');
+            meta.className = 'donor-meta';
+            const parts = [d.donor_number];
+            if (d.age) parts.push(d.age + (d.sex ? d.sex : ''));
+            if (d.last_donation_date) parts.push('Last ' + d.last_donation_date);
+            meta.textContent = parts.join(' \u00b7 ');
+            info.appendChild(meta);
+
+            row.appendChild(info);
+
+            // Barcode aligned right
+            const barcodeDiv = document.createElement('div');
+            barcodeDiv.className = 'donor-barcode';
+            barcodeDiv.appendChild(createBarcode(d.donor_number, { height: 28, barWidth: 1 }));
+            row.appendChild(barcodeDiv);
+
+            card.appendChild(row);
 
             list.appendChild(card);
         });
@@ -191,7 +201,7 @@ function saveDonor() {
         blood_group: bgBtn ? bgBtn.dataset.value : null,
         contact: document.getElementById('dContact').value || null
     };
-    fetch('/api/bloodbank/donors', {
+    authFetch('/api/bloodbank/donors', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -267,7 +277,7 @@ function buildStockSummary(units) {
 }
 
 function loadUnits() {
-    fetch('/api/bloodbank/units').then(r => r.json()).then(units => {
+    authFetch('/api/bloodbank/units', {}).then(r => r.json()).then(units => {
         const list = document.getElementById('unitList');
         const empty = document.getElementById('unitEmpty');
         list.innerHTML = '';
@@ -372,7 +382,7 @@ function openNewCollection() {
     dInp.addEventListener('input', () => {
         const q = dInp.value;
         if (q.length < 2) { dSugg.innerHTML = ''; return; }
-        fetch('/api/bloodbank/donors?search=' + encodeURIComponent(q))
+        authFetch('/api/bloodbank/donors?search=' + encodeURIComponent(q), {})
             .then(r => r.json()).then(donors => {
                 dSugg.innerHTML = '';
                 donors.forEach(d => {
@@ -481,7 +491,7 @@ function openNewCollection() {
             volume_ml: parseInt(document.getElementById('uVolume').value) || 450,
             ...screenings
         };
-        fetch('/api/bloodbank/units', {
+        authFetch('/api/bloodbank/units', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -496,7 +506,7 @@ function openNewCollection() {
 // ===== TRANSFUSIONS =====
 
 function loadTransfusions() {
-    fetch('/api/bloodbank/transfusions').then(r => r.json()).then(trs => {
+    authFetch('/api/bloodbank/transfusions', {}).then(r => r.json()).then(trs => {
         const list = document.getElementById('transfusionList');
         const empty = document.getElementById('trEmpty');
         list.innerHTML = '';
@@ -571,7 +581,7 @@ function openIssueUnit() {
     uDiv.appendChild(uList);
     body.appendChild(uDiv);
 
-    fetch('/api/bloodbank/units?status=AVAILABLE').then(r => r.json()).then(units => {
+    authFetch('/api/bloodbank/units?status=AVAILABLE', {}).then(r => r.json()).then(units => {
         if (units.length === 0) {
             uList.textContent = 'No available units';
             return;
@@ -693,11 +703,14 @@ function openIssueUnit() {
             crossmatch_result: xmActive ? xmActive.dataset.value : null,
             issued_to_ward: wActive ? wActive.dataset.value : null
         };
-        fetch('/api/bloodbank/transfusions', {
+        authFetch('/api/bloodbank/transfusions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
-        }).then(r => { if (r.ok) { closeModal(); loadTransfusions(); } });
+        }).then(r => {
+            if (r.ok) { closeModal(); loadTransfusions(); }
+            else { r.json().then(d => alert(d.error || 'Error')); }
+        });
     });
     footer.appendChild(cancelBtn);
     footer.appendChild(saveBtn);
@@ -773,7 +786,7 @@ function openCompleteTr(tr) {
             transfusion_completed: new Date().toISOString().replace('T', ' ').substring(0, 19),
             adverse_reaction: aActive && aActive.dataset.value === 'YES' ? 1 : 0
         };
-        fetch('/api/bloodbank/transfusions/' + tr.id, {
+        authFetch('/api/bloodbank/transfusions/' + tr.id, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
