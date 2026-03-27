@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Liminal — Playbook de test</title>
+<style>
+:root { --bg: #f7f6f3; --surface: #fff; --text: #1a1a1a; --muted: #888; --border: #d0cec9; --pass: #2e7d32; --pass-bg: #e8f5e9; --fail: #c62828; --fail-bg: #ffebee; --accent: #1a1a1a; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 24px 16px; }
+.container { max-width: 520px; width: 100%; }
+
+/* Progress */
+.progress { height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 8px; overflow: hidden; }
+.progress-bar { height: 100%; background: var(--accent); transition: width 0.3s; border-radius: 2px; }
+.counter { font-size: 12px; color: var(--muted); text-align: center; margin-bottom: 24px; }
+
+/* Card */
+.card { background: var(--surface); border-radius: 16px; padding: 28px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.chapter { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 8px; }
+.title { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
+
+/* Instruction */
+.instruction { font-size: 15px; line-height: 1.6; color: var(--text); margin-bottom: 16px; padding: 16px; background: var(--bg); border-radius: 10px; }
+.instruction ol { padding-left: 20px; }
+.instruction li { margin-bottom: 6px; }
+.instruction code { background: #e8e6e1; padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: 'SF Mono', Consolas, monospace; }
+
+/* Go link */
+.go-link { display: inline-block; margin-bottom: 16px; font-size: 13px; color: var(--accent); text-decoration: none; padding: 6px 14px; border: 1px solid var(--border); border-radius: 50px; transition: background 0.15s; }
+.go-link:hover { background: var(--bg); }
+
+/* Expected */
+.expected { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 16px; padding: 12px 16px; border-left: 3px solid var(--accent); background: var(--bg); border-radius: 0 8px 8px 0; }
+
+/* Comment */
+.comment-field { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; font-family: inherit; resize: vertical; min-height: 44px; margin-bottom: 16px; }
+.comment-field:focus { outline: none; border-color: var(--accent); }
+.comment-field::placeholder { color: #bbb; }
+
+/* Buttons */
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.btn { padding: 14px; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
+.btn:hover { opacity: 0.85; }
+.btn-pass { background: var(--pass); color: #fff; }
+.btn-fail { background: var(--fail); color: #fff; }
+.btn-back { border: none; background: none; color: var(--muted); font-size: 13px; cursor: pointer; margin-top: 12px; }
+
+/* Summary */
+.summary-stats { font-size: 18px; font-weight: 700; text-align: center; margin: 16px 0; }
+.stat-pass { color: var(--pass); }
+.stat-fail { color: var(--fail); }
+.fail-list { margin-top: 16px; }
+.fail-item { padding: 12px; margin-bottom: 8px; background: var(--fail-bg); border-radius: 10px; font-size: 14px; }
+.fail-item b { display: block; margin-bottom: 4px; }
+.fail-comment { font-style: italic; color: var(--fail); margin-top: 4px; font-size: 13px; }
+.pass-list { margin-top: 16px; }
+.pass-item { padding: 8px 12px; margin-bottom: 4px; background: var(--pass-bg); border-radius: 8px; font-size: 13px; color: var(--pass); }
+.export-btn { width: 100%; margin-top: 16px; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); font-size: 14px; font-weight: 600; cursor: pointer; }
+.export-btn:hover { background: var(--bg); }
+
+/* Intro */
+.intro { text-align: center; padding: 20px 0; }
+.intro h1 { font-size: 24px; margin-bottom: 8px; }
+.intro p { color: var(--muted); font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
+.btn-start { padding: 16px 48px; border: none; border-radius: 12px; background: var(--accent); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="container" id="app"></div>
+
+<script>
+const TESTS = [
+    // ===== SETUP =====
+    { ch: '1. Setup', title: 'Premier lancement',
+      steps: ['Ouvre l\'app : <code>http://127.0.0.1:5000</code>', 'C\'est la première fois — aucun opérateur n\'existe.'],
+      expect: 'L\'écran de setup s\'affiche : un champ "Your Name" et un numpad.' },
+
+    { ch: '1. Setup', title: 'Créer l\'admin',
+      steps: ['Entre ton nom dans le champ.', 'Tape un PIN de 4-8 chiffres sur le numpad.', 'Confirme le PIN (il te le redemande).'],
+      expect: 'Le wizard onboarding apparaît (étape config site).' },
+
+    { ch: '1. Setup', title: 'Configurer le site',
+      steps: ['Remplis : nom du site, code site (3-5 lettres), pays.', 'Sélectionne la langue par défaut.', 'Clique "Next".'],
+      expect: 'L\'étape "Tests actifs" s\'affiche avec la liste des 18 tests.' },
+
+    { ch: '1. Setup', title: 'Sélectionner les tests',
+      steps: ['Décoche les tests non utilisés sur ton site.', 'Garde au moins MAL_RDT, HB, GLU, HIV_RDT.', 'Clique "Next".'],
+      expect: 'L\'étape "Créer des opérateurs" s\'affiche.' },
+
+    { ch: '1. Setup', title: 'Créer les opérateurs',
+      steps: ['Crée un superviseur : nom + PIN <code>0755</code>.', 'Crée un technicien : nom + PIN <code>0644</code>.', 'Clique "Next".'],
+      expect: 'Écran récap avec site, tests actifs, opérateurs. Bouton "Start using Liminal".' },
+
+    { ch: '1. Setup', title: 'Démarrer',
+      steps: ['Clique "Start using Liminal".'],
+      expect: 'La page /register s\'affiche. Le header montre le nom du site. La version est en bas à droite.' },
+
+    // ===== NAVIGATION =====
+    { ch: '2. Navigation', title: 'Pages publiques',
+      steps: ['Clique sur "Register" dans la nav.', 'Clique sur "Equipment".', 'Clique sur "Reports".'],
+      expect: 'Les 3 pages chargent sans demander de PIN.', go: '/register' },
+
+    { ch: '2. Navigation', title: 'Pages protégées',
+      steps: ['Clique sur le cadenas dans la nav.', 'Entre le PIN admin.'],
+      expect: 'Les liens Patients, Blood Bank, Export, Settings apparaissent.' },
+
+    { ch: '2. Navigation', title: 'Session de lecture',
+      steps: ['Navigue entre les pages protégées.'],
+      expect: 'Pas de re-demande de PIN pendant 15 minutes.' },
+
+    // ===== ENREGISTREMENT =====
+    { ch: '3. Enregistrement', title: 'Ouvrir le wizard',
+      steps: ['Va sur /register.', 'Clique le bouton <code>+</code> en bas à droite.'],
+      expect: 'Le wizard 3 étapes s\'ouvre.', go: '/register' },
+
+    { ch: '3. Enregistrement', title: 'Step 1 — Patient',
+      steps: ['Nom : <code>Amira Deng</code>', 'Age : <code>28</code>', 'Sexe : clique <code>F</code>'],
+      expect: 'Le bouton F est surligné. Le champ âge accepte le nombre.' },
+
+    { ch: '3. Enregistrement', title: 'Step 2 — Spécimen',
+      steps: ['Service : clique <code>ER</code>', 'Spécimen : clique <code>BLOOD</code>'],
+      expect: 'Les boutons répondent au clic et sont surlignés.' },
+
+    { ch: '3. Enregistrement', title: 'Step 3 — Tests',
+      steps: ['Coche <code>MAL_RDT</code> et <code>HB</code>.', 'Clique "Register".', 'Le numpad s\'affiche → entre le PIN technicien <code>0644</code>.'],
+      expect: 'Écran de succès avec le lab_number (ex: LAB-2026-0001). La card apparaît en REGISTERED.' },
+
+    { ch: '3. Enregistrement', title: 'Champ vide',
+      steps: ['Ouvre le wizard à nouveau.', 'Laisse le nom vide.', 'Essaie de passer à l\'étape suivante.'],
+      expect: 'Le wizard ne laisse PAS passer sans nom. Message d\'erreur ou bouton grisé.' },
+
+    // ===== RÉSULTATS =====
+    { ch: '4. Résultats', title: 'Ouvrir la modal',
+      steps: ['Clique sur la card REGISTERED d\'Amira Deng.'],
+      expect: 'La modal résultats s\'ouvre. Les tests MAL_RDT et HB sont affichés.' },
+
+    { ch: '4. Résultats', title: 'Saisir les résultats',
+      steps: ['MAL_RDT → clique <code>POS</code>.', 'HB → entre <code>12.5</code>.'],
+      expect: 'Le bouton POS est surligné. Le champ HB accepte le décimal.' },
+
+    { ch: '4. Résultats', title: 'Sauvegarder',
+      steps: ['Clique "Save Results".', 'Le PIN est demandé → entre <code>0644</code>.'],
+      expect: 'Sauvé. La card passe en statut REVIEW. UN seul PIN demandé (pas deux).' },
+
+    // ===== PANIC =====
+    { ch: '5. Valeur critique', title: 'Créer un sample panic',
+      steps: ['Crée un nouvel échantillon avec test <code>HB</code>.', 'Ouvre les résultats.', 'Entre HB = <code>3.0</code> (seuil critique < 5.0).'],
+      expect: 'Le champ pulse rouge. Warning "CRITICAL VALUE" affiché. Le bouton change en "Confirm Critical Values".' },
+
+    { ch: '5. Valeur critique', title: 'Modal panic',
+      steps: ['Clique "Confirm Critical Values".'],
+      expect: 'Modal panic : "HB: 3.0 — Threshold: < 5.0". Bouton "Confirm & Save" GRISÉ.' },
+
+    { ch: '5. Valeur critique', title: 'Confirmer',
+      steps: ['Coche "I have verified these critical values".', 'Clique "Confirm & Save".'],
+      expect: 'Résultat sauvé. La card passe en REVIEW.' },
+
+    // ===== VALIDATION =====
+    { ch: '6. Validation', title: 'Dashboard superviseur',
+      steps: ['Déverrouille la nav avec PIN superviseur <code>0755</code>.'],
+      expect: 'Le dashboard apparaît. "To validate" affiche les entrées en REVIEW.' },
+
+    { ch: '6. Validation', title: 'Valider une entrée',
+      steps: ['Clique sur une entrée REVIEW.', 'Clique "Validate Results".', 'Entre le PIN <code>0755</code>.'],
+      expect: 'UN seul PIN demandé. L\'entrée passe en COMPLETED.' },
+
+    { ch: '6. Validation', title: 'Four-eyes (même opérateur)',
+      steps: ['Crée une entrée + saisis des résultats avec le PIN <code>0755</code> (superviseur).', 'Tente de valider avec le même PIN <code>0755</code>.'],
+      expect: 'Modal "Four-Eyes Rule" (PAS un popup navigateur natif). Deux choix : "Go back" et "Override & validate".' },
+
+    { ch: '6. Validation', title: 'Bypass four-eyes',
+      steps: ['Clique "Override & validate".'],
+      expect: 'La validation passe. (La non-conformité est loguée dans l\'audit trail.)' },
+
+    { ch: '6. Validation', title: 'Rejeter depuis REVIEW',
+      steps: ['Sur une entrée REVIEW, clique le lien rouge "Reject sample".', 'Sélectionne une raison (ex: QNS).', 'Confirme.'],
+      expect: 'L\'entrée passe en REJECTED avec la raison affichée.' },
+
+    { ch: '6. Validation', title: 'Annuler un rejet',
+      steps: ['Ouvre l\'entrée REJECTED.', 'Clique "Undo Rejection".', 'PIN superviseur.'],
+      expect: 'L\'entrée revient en REGISTERED.' },
+
+    // ===== BLOOD BANK =====
+    { ch: '7. Banque de sang', title: 'Créer un donneur',
+      steps: ['Va sur /bloodbank (PIN admin <code>0777</code>).', 'Onglet Donors → clique <code>+</code>.', 'Nom : <code>Pierre Deng</code>, Groupe : <code>O+</code>, Age : 30, Sexe : M.', 'Clique "Register Donor".'],
+      expect: 'Card donneur : badge O+, nom, code-barres Code 128.', go: '/bloodbank' },
+
+    { ch: '7. Banque de sang', title: 'Collecte — screenings NEG',
+      steps: ['Onglet Stock → clique <code>+</code>.', 'Cherche et sélectionne le donneur.', 'Tous les screenings (HIV, HBV, HCV, Syphilis) → <code>NEG</code>.', 'Clique "Register Unit".'],
+      expect: 'L\'unité apparaît en statut AVAILABLE.' },
+
+    { ch: '7. Banque de sang', title: 'Collecte — screening POS',
+      steps: ['Même flow mais mets HIV = <code>POS</code>.'],
+      expect: 'L\'unité apparaît directement en statut DISCARDED (auto-discard).' },
+
+    { ch: '7. Banque de sang', title: 'Transfusion INCOMPATIBLE',
+      steps: ['Onglet Transfusions → clique <code>+</code>.', 'Sélectionne une unité AVAILABLE.', 'Crossmatch = <code>INCOMPATIBLE</code>.', 'Essaie d\'issue.'],
+      expect: 'Modal d\'erreur (PAS un popup natif). La transfusion est bloquée.' },
+
+    { ch: '7. Banque de sang', title: 'Transfusion COMPATIBLE',
+      steps: ['Crossmatch = <code>COMPATIBLE</code>.', 'Patient name, ward → clique "Issue Unit".'],
+      expect: 'Transfusion créée. L\'unité passe en ISSUED.' },
+
+    { ch: '7. Banque de sang', title: 'Compléter une transfusion',
+      steps: ['Clique sur la transfusion dans la liste.', 'Adverse reaction → sélectionne NO.', 'Clique "Complete Transfusion".'],
+      expect: 'La transfusion passe en statut "completed".' },
+
+    // ===== EQUIPMENT =====
+    { ch: '8. Équipements', title: 'Créer un équipement',
+      steps: ['Va sur /equipment.', 'Clique <code>+</code> → PIN admin.', 'Nom : <code>Microscope Olympus</code>, Catégorie : Microscope, Condition : Good.'],
+      expect: 'Card équipement avec condition en vert.', go: '/equipment' },
+
+    { ch: '8. Équipements', title: 'Log maintenance',
+      steps: ['Clique sur la card équipement.', 'Clique "Add Maintenance".', 'Type : PREVENTIVE, Description : "Nettoyage optique".', 'PIN technicien.'],
+      expect: 'Le log maintenance apparaît sous la card avec date et description.' },
+
+    // ===== REPORTS =====
+    { ch: '9. Rapports', title: 'Rapport mensuel',
+      steps: ['Va sur /reports.', 'Sélectionne le mois et l\'année en cours.', 'Clique "Generate" → PIN superviseur.'],
+      expect: 'PDF généré. Lien de téléchargement. Le PDF contient les stats (volumes, positivité, TAT).', go: '/reports' },
+
+    { ch: '9. Rapports', title: 'Export Excel',
+      steps: ['Va sur /export.', 'Sélectionne les dates (large range).', 'Clique "Export Excel" → PIN superviseur.'],
+      expect: 'Fichier .xlsx téléchargé. Ouvre-le : les données sont là.', go: '/export' },
+
+    { ch: '9. Rapports', title: 'Export CSV',
+      steps: ['Même chose avec "Export CSV".'],
+      expect: 'Fichier .csv téléchargé. Les données sont identiques à l\'Excel.' },
+
+    // ===== BACKUP =====
+    { ch: '10. Backup', title: 'Créer un backup',
+      steps: ['Va sur /settings → PIN admin.', 'Clique "Backup Now".'],
+      expect: 'Message succès. Le backup apparaît dans la liste avec nom, date, taille.', go: '/settings' },
+
+    { ch: '10. Backup', title: 'Télécharger un backup',
+      steps: ['Clique sur le backup dans la liste.'],
+      expect: 'Le fichier .db se télécharge.' },
+
+    { ch: '10. Backup', title: 'Restore invalide',
+      steps: ['Dans la section Restore, uploade un fichier texte quelconque (pas un .db).'],
+      expect: 'Message d\'erreur. La base n\'est pas remplacée.' },
+
+    // ===== SÉCURITÉ =====
+    { ch: '11. Sécurité', title: 'PIN incorrect',
+      steps: ['Sur n\'importe quelle action protégée, entre un mauvais PIN.'],
+      expect: 'Message d\'erreur + animation shake. Le numpad se réinitialise. Pas de boucle infinie.' },
+
+    { ch: '11. Sécurité', title: 'Niveau insuffisant',
+      steps: ['Avec le PIN technicien <code>0644</code>, essaie de valider des résultats.'],
+      expect: 'Erreur de niveau affichée. Pas de boucle numpad.' },
+
+    { ch: '11. Sécurité', title: 'Accès donneur interdit',
+      steps: ['Avec le PIN superviseur <code>0755</code>, essaie d\'accéder à l\'onglet Donors de la banque de sang.'],
+      expect: 'Erreur d\'authentification ou liste vide (Level 3 requis).' },
+
+    { ch: '11. Sécurité', title: 'Audit trail',
+      steps: ['Ouvre une entrée COMPLETED dans le registre.', 'Cherche l\'historique / audit trail de cette entrée.'],
+      expect: 'Les actions sont listées : CREATE, RESULT, VALIDATE — avec opérateur et date.' },
+
+    // ===== OFFLINE =====
+    { ch: '12. Offline', title: 'Mode hors-ligne',
+      steps: ['Coupe internet (mode avion, débranche le câble, etc.)', 'Crée un échantillon, saisis des résultats, valide.'],
+      expect: 'Tout fonctionne identiquement. Aucune erreur dans la console (F12 → Console).' },
+];
+
+// ===== STATE =====
+let current = 0;
+let results = TESTS.map(() => ({ status: null, comment: '' }));
+let started = false;
+
+function render() {
+    const app = document.getElementById('app');
+    if (!started) { renderIntro(app); return; }
+    if (current >= TESTS.length) { renderSummary(app); return; }
+    renderTest(app);
+}
+
+function renderIntro(app) {
+    app.innerHTML = '';
+    const div = document.createElement('div');
+    div.className = 'intro';
+    div.innerHTML = '<h1>Liminal — Playbook</h1>' +
+        '<p>' + TESTS.length + ' tests à jouer.<br>Tu vas être guidé étape par étape.<br>Ouvre l\'app dans un 2e onglet et suis les instructions.</p>';
+    const btn = document.createElement('button');
+    btn.className = 'btn-start';
+    btn.textContent = 'Commencer';
+    btn.addEventListener('click', () => { started = true; render(); });
+    div.appendChild(btn);
+    app.appendChild(div);
+}
+
+function renderTest(app) {
+    const t = TESTS[current];
+    const pct = ((current + 1) / TESTS.length * 100).toFixed(0);
+    app.innerHTML = '';
+
+    // Progress
+    const prog = document.createElement('div');
+    prog.className = 'progress';
+    const bar = document.createElement('div');
+    bar.className = 'progress-bar';
+    bar.style.width = pct + '%';
+    prog.appendChild(bar);
+    app.appendChild(prog);
+
+    const counter = document.createElement('div');
+    counter.className = 'counter';
+    counter.textContent = (current + 1) + ' / ' + TESTS.length + ' — ' + t.ch;
+    app.appendChild(counter);
+
+    // Card
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const chapter = document.createElement('div');
+    chapter.className = 'chapter';
+    chapter.textContent = t.ch;
+    card.appendChild(chapter);
+
+    const title = document.createElement('div');
+    title.className = 'title';
+    title.textContent = t.title;
+    card.appendChild(title);
+
+    // Instructions
+    const instr = document.createElement('div');
+    instr.className = 'instruction';
+    const ol = document.createElement('ol');
+    t.steps.forEach(s => {
+        const li = document.createElement('li');
+        li.innerHTML = s;
+        ol.appendChild(li);
+    });
+    instr.appendChild(ol);
+    card.appendChild(instr);
+
+    // Go link
+    if (t.go) {
+        const link = document.createElement('a');
+        link.className = 'go-link';
+        link.href = t.go;
+        link.target = '_blank';
+        link.textContent = 'Ouvrir ' + t.go + ' \u2197';
+        card.appendChild(link);
+    }
+
+    // Expected
+    const exp = document.createElement('div');
+    exp.className = 'expected';
+    exp.textContent = t.expect;
+    card.appendChild(exp);
+
+    // Comment
+    const comment = document.createElement('textarea');
+    comment.className = 'comment-field';
+    comment.placeholder = 'Remarque (optionnel)...';
+    comment.value = results[current].comment;
+    comment.addEventListener('input', () => { results[current].comment = comment.value; });
+    card.appendChild(comment);
+
+    // Actions
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    const failBtn = document.createElement('button');
+    failBtn.className = 'btn btn-fail';
+    failBtn.textContent = 'Non \u2717';
+    failBtn.addEventListener('click', () => { results[current].status = false; current++; render(); });
+    const passBtn = document.createElement('button');
+    passBtn.className = 'btn btn-pass';
+    passBtn.textContent = 'Oui \u2713';
+    passBtn.addEventListener('click', () => { results[current].status = true; current++; render(); });
+    actions.appendChild(failBtn);
+    actions.appendChild(passBtn);
+    card.appendChild(actions);
+
+    // Back
+    if (current > 0) {
+        const back = document.createElement('button');
+        back.className = 'btn-back';
+        back.textContent = '\u2190 Pr\u00e9c\u00e9dent';
+        back.addEventListener('click', () => { current--; render(); });
+        card.appendChild(back);
+    }
+
+    app.appendChild(card);
+}
+
+function renderSummary(app) {
+    app.innerHTML = '';
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const title = document.createElement('div');
+    title.className = 'title';
+    title.textContent = 'R\u00e9sultats';
+    card.appendChild(title);
+
+    let passed = 0, failed = 0;
+    const failures = [];
+    results.forEach((r, i) => {
+        if (r.status === true) passed++;
+        else if (r.status === false) { failed++; failures.push(i); }
+    });
+
+    const stats = document.createElement('div');
+    stats.className = 'summary-stats';
+    stats.innerHTML = '<span class="stat-pass">' + passed + ' pass\u00e9s</span> \u00b7 <span class="stat-fail">' + failed + ' \u00e9chou\u00e9s</span> \u00b7 ' + TESTS.length + ' total';
+    card.appendChild(stats);
+
+    // Failures
+    if (failures.length > 0) {
+        const fTitle = document.createElement('div');
+        fTitle.style.fontWeight = '700';
+        fTitle.style.marginTop = '16px';
+        fTitle.style.marginBottom = '8px';
+        fTitle.textContent = '\u00c9checs :';
+        card.appendChild(fTitle);
+
+        failures.forEach(i => {
+            const t = TESTS[i];
+            const item = document.createElement('div');
+            item.className = 'fail-item';
+            item.innerHTML = '<b>' + t.ch + ' \u2014 ' + t.title + '</b>' + t.expect;
+            if (results[i].comment) {
+                const c = document.createElement('div');
+                c.className = 'fail-comment';
+                c.textContent = '\u00ab ' + results[i].comment + ' \u00bb';
+                item.appendChild(c);
+            }
+            card.appendChild(item);
+        });
+    }
+
+    // Passed list
+    const pTitle = document.createElement('div');
+    pTitle.style.fontWeight = '700';
+    pTitle.style.marginTop = '16px';
+    pTitle.style.marginBottom = '8px';
+    pTitle.textContent = 'Pass\u00e9s :';
+    card.appendChild(pTitle);
+    results.forEach((r, i) => {
+        if (r.status !== true) return;
+        const item = document.createElement('div');
+        item.className = 'pass-item';
+        item.textContent = '\u2713 ' + TESTS[i].ch + ' \u2014 ' + TESTS[i].title;
+        card.appendChild(item);
+    });
+
+    // Export
+    const exportBtn = document.createElement('button');
+    exportBtn.className = 'export-btn';
+    exportBtn.textContent = 'Copier le rapport';
+    exportBtn.addEventListener('click', () => {
+        let text = 'LIMINAL PLAYBOOK REPORT\n' + new Date().toISOString() + '\n';
+        text += passed + ' passed, ' + failed + ' failed, ' + TESTS.length + ' total\n\n';
+        results.forEach((r, i) => {
+            const icon = r.status === true ? 'PASS' : r.status === false ? 'FAIL' : 'SKIP';
+            text += '[' + icon + '] ' + TESTS[i].ch + ' - ' + TESTS[i].title + '\n';
+            if (r.comment) text += '       Note: ' + r.comment + '\n';
+        });
+        navigator.clipboard.writeText(text).then(() => { exportBtn.textContent = 'Copi\u00e9 !'; });
+    });
+    card.appendChild(exportBtn);
+
+    // Restart
+    const restart = document.createElement('button');
+    restart.className = 'export-btn';
+    restart.textContent = 'Recommencer';
+    restart.addEventListener('click', () => {
+        current = 0;
+        results = TESTS.map(() => ({ status: null, comment: '' }));
+        render();
+    });
+    card.appendChild(restart);
+
+    app.appendChild(card);
+}
+
+render();
+</script>
+</body>
+</html>
