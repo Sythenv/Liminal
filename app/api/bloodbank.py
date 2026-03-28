@@ -1,6 +1,6 @@
 """Blood Bank API - Donors, Units, Transfusions."""
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from flask import Blueprint, request, jsonify
 from app.db import get_db
 from app.audit import log_action
@@ -200,6 +200,10 @@ def update_unit(unit_id):
 
     # Auto-discard if any screening is now positive
     if has_pos and current['status'] != 'DISCARDED':
+        if current['status'] == 'ISSUED':
+            log_action(db, 'ALERT', 'blood_unit', unit_id,
+                       [('screening_alert', None, 'ISSUED unit found positive after transfusion')],
+                       get_current_operator_name())
         new_status = 'DISCARDED'
 
     if new_status and new_status not in ALLOWED_UNIT_STATUS:
@@ -248,6 +252,8 @@ def create_transfusion():
         return jsonify({'error': 'Unit not found'}), 404
     if unit['status'] != 'AVAILABLE':
         return jsonify({'error': 'Unit is not available'}), 400
+    if unit['expiry_date'] and unit['expiry_date'] < date.today().isoformat():
+        return jsonify({'error': 'Unit has expired'}), 400
 
     patient_name = (data.get('patient_name') or '').strip()
     if not patient_name:

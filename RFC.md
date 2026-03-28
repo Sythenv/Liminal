@@ -294,3 +294,113 @@
 
 **Sprint 5 — HQ** : P5.2, P7.1, P8.1
 → Import config, export signé, import GeneXpert
+
+---
+
+## Benchmark v0.3 — 2026-03-28
+
+### API Happy Path (39/39 PASS)
+
+Walkthrough curl complet de tous les endpoints. Résultat : **100% pass**.
+
+| Module | Tests | Status |
+|--------|-------|--------|
+| Auth (setup, verify, operators, RBAC) | 8 | PASS |
+| Config (site, tests) | 2 | PASS |
+| Patient + Registration | 4 | PASS |
+| Result entry | 4 | PASS |
+| Validation (four-eyes, L2) | 3 | PASS |
+| Rejection + unreject | 5 | PASS |
+| Four-eyes rule | 3 | PASS |
+| Panic values | 2 | PASS |
+| Blood bank (donors, units, transfusions, auto-discard) | 6 | PASS |
+| Equipment + maintenance | 3 | PASS |
+| Reports + export (PDF, CSV, Excel) | 3 | PASS |
+| Backup | 2 | PASS |
+| Worklist / lookup / search | 4 | PASS |
+
+### Observations (à traiter)
+
+#### OBS-1 : Format résultats silencieux (MEDIUM)
+`POST /api/register/entries/{id}/results` accepte silencieusement des test codes inconnus et renvoie `ok: true` sans rien faire. Un labtech pourrait croire avoir sauvegardé ses résultats alors que le format était incorrect. **Fix :** renvoyer 400 si aucun test code reconnu dans le payload.
+
+#### OBS-2 : Patient-entry linkage non automatique (MEDIUM)
+Créer un patient puis enregistrer un échantillon avec le même nom ne lie pas automatiquement via `patient_fk`. L'historique patient (`GET /api/patients/{id}`) reste vide sans ce lien explicite. Le wizard frontend gère ça (il passe `patient_fk`), mais un appel API direct sans `patient_fk` perd le lien. **Impact terrain :** faible (le wizard passe toujours le FK), mais fragile.
+
+#### OBS-3 : Panic detection côté client uniquement (LOW)
+Le serveur fournit les seuils panic dans `/context` mais ne flag pas le résultat lui-même. Si le frontend ne fait pas la comparaison, un résultat critique passe inaperçu. **Fix futur :** ajouter un champ `is_panic` calculé dans la réponse API.
+
+#### OBS-4 : Double fetch verify dans unlockNav (LOW)
+`pin.js` : `verifyPin()` fait un fetch `/api/auth/verify`, puis le callback dans `unlockNav()` en fait un deuxième. Pas de bug fonctionnel (le premier a déjà mis à jour `currentLevel`), mais un appel réseau inutile. **Fix :** supprimer le fetch redondant dans le callback.
+
+#### OBS-5 : PINs dev hardcodés (CRITICAL — pré-release)
+Les PINs 0777/0755 sont toujours actifs en base. Confirmé par le benchmark (verify retourne Sebastien L3, Jea L2). À supprimer ou forcer reset au premier déploiement terrain.
+
+### Flows frontend non testés (à benchmarker)
+
+Le walkthrough API ne couvre pas les interactions JS/DOM :
+
+| Flow | Risque | Couvert ? |
+|------|--------|-----------|
+| Landing → PIN pad → worklist transition | HAUT (nouveau code) | NON |
+| Worklist tabs (switch filtre, refresh) | HAUT (nouveau code) | NON |
+| TAT coloring (calcul temps, couleurs) | MEDIUM (nouveau code) | NON |
+| Urgency sort (wards ER en haut) | MEDIUM (nouveau code) | NON |
+| Wizard complet (3 steps → submit → refresh worklist) | HAUT | NON |
+| Result modal (open → edit → save → refresh) | HAUT | NON |
+| Reject → unreject flow via UI | MEDIUM | NON |
+| Four-eyes modal (override confirmation) | MEDIUM | NON |
+| Panic modal (checkbox → confirm) | MEDIUM | NON |
+| Session expiry (15 min TTL → re-prompt PIN) | MEDIUM | NON |
+| Mobile scroll (wizard step 2 test selection) | HAUT (bug reporté) | PARTIELLEMENT fixé |
+| RTL layout (Arabic) | LOW | NON |
+| Barcode scanner input (HID keyboard) | MEDIUM | NON |
+| Landing search (patient lookup, DOB formats) | MEDIUM | NON |
+| Blood bank UI (donor → unit → transfusion) | MEDIUM | NON |
+| Equipment UI (create → maintenance log) | LOW | NON |
+| Export/report download | LOW | NON |
+
+### Edge Case Benchmark (41 tests — 2026-03-28)
+
+#### Résultats : 30 PASS, 5 BUGS, 6 WARNINGS
+
+#### Bugs identifiés et corrigés
+
+| ID | Bug | Sévérité | Fichier | Statut |
+|----|-----|----------|---------|--------|
+| EC-1 | Résultats acceptés sur entrée REJECTED (status passe à IN_PROGRESS) | CRITIQUE | register.py `update_results()` | FIXÉ |
+| EC-2 | Résultats acceptés sur entrée COMPLETED (annule la validation) | CRITIQUE | register.py `update_results()` | FIXÉ |
+| EC-3 | Unité sanguine expirée peut être transfusée (lazy expiry) | ÉLEVÉ | bloodbank.py `create_transfusion()` | FIXÉ |
+| EC-4 | Screening POS sur unité ISSUED → DISCARDED sans alerte | ÉLEVÉ | bloodbank.py `update_unit()` | FIXÉ |
+| EC-5 | Race condition double submit → 500 (SQLite lock) | MOYEN | register.py `create_entry()` | FIXÉ |
+
+#### Warnings (non bloquants, à surveiller)
+
+| ID | Warning | Sévérité | Action |
+|----|---------|----------|--------|
+| WRN-1 | XSS stocké dans result_value (pas sanitisé côté serveur) | MEDIUM | Frontend escape via `esc()`, ajouter sanitize côté serveur plus tard |
+| WRN-2 | "abc" accepté pour un test numérique (pas de validation type) | MEDIUM | Validation côté frontend uniquement pour l'instant |
+| WRN-3 | Panic non bloquant côté serveur | LOW | Géré côté frontend (modal confirmation) |
+| WRN-4 | Re-rejection écrase la raison précédente | LOW | Audit trail conserve les deux events |
+| WRN-5 | Catégorie équipement non validée | LOW | Accepter les catégories libres pour flexibilité terrain |
+| WRN-6 | Export dates inversées → fichier vide sans erreur | LOW | Ajouter validation date_from ≤ date_to |
+
+#### Tests edge case passés (sélection)
+
+| Catégorie | Test | Status |
+|-----------|------|--------|
+| Registration | Empty name, null name, age -5, age 999, sex "X" | PASS (400) |
+| Registration | Specimen 500 chars → truncated | PASS |
+| Auth | Weak PIN 1234, short PIN, long PIN, duplicate PIN | PASS (400) |
+| Auth | Deactivated operator verify → 401 | PASS |
+| Validation | Validate REGISTERED/IN_PROGRESS → 400 | PASS |
+| Validation | Unreject non-rejected → 400 | PASS |
+| Rejection | Invalid reason, empty reason → 400 | PASS |
+| Blood bank | Invalid blood group, empty donor name → 400 | PASS |
+| Blood bank | Issue DISCARDED unit, double issue → 400 | PASS |
+| Blood bank | Incompatible crossmatch → 400 | PASS |
+| Equipment | Empty name, invalid maintenance type → 400 | PASS |
+| Backup | Restore non-SQLite file → 400 | PASS |
+| Config | Empty site_code, site_code > 5 chars → 400 | PASS |
+| Patient | Empty name, invalid sex → 400 | PASS |
+| Report | Month 0, month 13 → 400 | PASS |

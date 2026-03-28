@@ -239,26 +239,34 @@ def create_entry():
         if existing_patient:
             patient_fk = existing_patient['id']
 
-    db.execute('''INSERT INTO lab_register
-        (lab_number, reception_date, reception_time, collection_time, patient_name, patient_id,
-         age, age_unit, sex, ward, requesting_clinician, specimen_type,
-         technician_initials, remarks, patient_fk)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-        (lab_number,
-         data.get('reception_date', datetime.now().strftime('%Y-%m-%d')),
-         data.get('reception_time', datetime.now().strftime('%H:%M')),
-         collection_time,
-         patient_name,
-         sanitize_str(data.get('patient_id'), 50),
-         age,
-         sanitize_str(data.get('age_unit', 'Y'), 1),
-         sex or None,
-         sanitize_str(data.get('ward'), 20),
-         sanitize_str(data.get('requesting_clinician')),
-         sanitize_str(data.get('specimen_type'), 20),
-         sanitize_str(data.get('technician_initials'), 5),
-         sanitize_str(data.get('remarks')),
-         patient_fk))
+    import sqlite3
+    for _attempt in range(3):
+        try:
+            db.execute('''INSERT INTO lab_register
+                (lab_number, reception_date, reception_time, collection_time, patient_name, patient_id,
+                 age, age_unit, sex, ward, requesting_clinician, specimen_type,
+                 technician_initials, remarks, patient_fk)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                (lab_number,
+                 data.get('reception_date', datetime.now().strftime('%Y-%m-%d')),
+                 data.get('reception_time', datetime.now().strftime('%H:%M')),
+                 collection_time,
+                 patient_name,
+                 sanitize_str(data.get('patient_id'), 50),
+                 age,
+                 sanitize_str(data.get('age_unit', 'Y'), 1),
+                 sex or None,
+                 sanitize_str(data.get('ward'), 20),
+                 sanitize_str(data.get('requesting_clinician')),
+                 sanitize_str(data.get('specimen_type'), 20),
+                 sanitize_str(data.get('technician_initials'), 5),
+                 sanitize_str(data.get('remarks')),
+                 patient_fk))
+            break
+        except sqlite3.IntegrityError:
+            lab_number = generate_lab_number()
+    else:
+        return jsonify({'error': 'Could not generate unique lab number, please retry'}), 409
 
     entry_id = db.execute('SELECT last_insert_rowid()').fetchone()[0]
 
@@ -337,6 +345,12 @@ def update_results(entry_id):
     db = get_db()
     data = request.get_json()
     operator = get_current_operator_name()
+
+    entry = db.execute('SELECT status FROM lab_register WHERE id = ?', (entry_id,)).fetchone()
+    if not entry:
+        return jsonify({'error': 'Entry not found'}), 404
+    if entry['status'] in ('COMPLETED', 'REJECTED'):
+        return jsonify({'error': f'Cannot modify results on {entry["status"]} entry'}), 400
 
     changes = []
     matched_count = 0
