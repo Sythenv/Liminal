@@ -195,6 +195,40 @@ body {
     padding: 16px 0 80px;
 }
 
+/* Review enrichment on cards */
+.card-review-info {
+    font-size: var(--text-sm);
+    color: var(--gray);
+    padding: 4px 0;
+    border-top: 1px solid var(--border-light);
+    margin-top: 4px;
+}
+.card-actions {
+    padding-top: 8px;
+}
+.card-validate-btn {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--sig-ok);
+    color: var(--white);
+    font-weight: 700;
+    font-size: var(--text-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+}
+.card-validate-btn:active { opacity: 0.8; }
+.card-test-badge.card-panic {
+    background: var(--sig-alert-bg);
+    color: var(--sig-alert);
+    font-weight: 700;
+}
+.card-test-badge.card-panic::after {
+    content: ' ⚠';
+}
+
 /* ===== DASHBOARD MODE (legacy) ===== */
 #dashboardMode, #worklistMode {
     max-width: 960px;

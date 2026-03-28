@@ -270,13 +270,9 @@ function loadWorklistEntries(statusFilter) {
             }
             empty.style.display = 'none';
 
-            if (statusFilter === 'REVIEW' && currentLevel >= 2) {
-                container.appendChild(buildReviewTable(entries));
-            } else {
-                entries.forEach(entry => {
-                    container.appendChild(buildWorklistCard(entry));
-                });
-            }
+            entries.forEach(entry => {
+                container.appendChild(buildWorklistCard(entry));
+            });
         });
 }
 
@@ -303,6 +299,72 @@ function buildWorklistCard(entry) {
 
     const top = card.querySelector('.card-top');
     if (top) top.appendChild(tatEl);
+
+    // REVIEW enrichment: show entered_by + validate button
+    if (entry.status === 'REVIEW') {
+        const reviewInfo = document.createElement('div');
+        reviewInfo.className = 'card-review-info';
+        reviewInfo.textContent = '...';
+        card.appendChild(reviewInfo);
+
+        // Fetch context async (entered_by, panic flags)
+        fetch(`/api/register/entries/${entry.id}/context`)
+            .then(r => r.json())
+            .then(ctx => {
+                const parts = [];
+                if (ctx.entered_by) parts.push(ctx.entered_by.replace('Tech. ', '').replace('Sup. ', ''));
+                if (ctx.turnaround) parts.push(ctx.turnaround);
+                if (ctx.ward) parts.push(ctx.ward);
+                reviewInfo.textContent = parts.join(' · ') || '';
+
+                // Panic flags on test badges
+                if (ctx.panic_thresholds) {
+                    card.querySelectorAll('.card-test-badge').forEach(badge => {
+                        const text = badge.textContent;
+                        const code = text.split(':')[0].trim();
+                        const val = entry.results[code]?.result_value;
+                        if (!val) return;
+                        const thresh = ctx.panic_thresholds[code];
+                        if (!thresh) return;
+                        if (STRUCTURED_TESTS[code]) {
+                            try {
+                                const parsed = JSON.parse(val);
+                                STRUCTURED_TESTS[code].fields.forEach(f => {
+                                    if (f.type === 'numeric' && parsed[f.key]) {
+                                        const v = parseFloat(parsed[f.key]);
+                                        if ((f.panic_low != null && v < f.panic_low) || (f.panic_high != null && v > f.panic_high)) {
+                                            badge.classList.add('card-panic');
+                                        }
+                                    }
+                                });
+                            } catch(e) {}
+                        } else {
+                            const numVal = parseFloat(val);
+                            if (!isNaN(numVal)) {
+                                if ((thresh.low != null && numVal < thresh.low) || (thresh.high != null && numVal > thresh.high)) {
+                                    badge.classList.add('card-panic');
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+
+        // Validate button (L2+ only)
+        if (currentLevel >= 2) {
+            const btnRow = document.createElement('div');
+            btnRow.className = 'card-actions';
+            const vBtn = document.createElement('button');
+            vBtn.className = 'card-validate-btn';
+            vBtn.textContent = getCurrentLang() === 'fr' ? 'Valider' : 'Validate';
+            vBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                executeValidate(entry.id);
+            });
+            btnRow.appendChild(vBtn);
+            card.appendChild(btnRow);
+        }
+    }
 
     return card;
 }
