@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 90">
+  <defs>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <!-- Starburst / sci-fi sparkle -->
+  <g transform="translate(240, 22)" filter="url(#glow)" opacity="0.6">
+    <!-- Vertical spike (tallest) -->
+    <line x1="0" y1="-20" x2="0" y2="20" stroke="#ffffff" stroke-width="2"/>
+    <!-- Horizontal spike -->
+    <line x1="-20" y1="0" x2="20" y2="0" stroke="#ffffff" stroke-width="2"/>
+    <!-- Diagonal spikes (shorter, thinner) -->
+    <line x1="-10" y1="-10" x2="10" y2="10" stroke="#ffffff" stroke-width="1.2"/>
+    <line x1="10" y1="-10" x2="-10" y2="10" stroke="#ffffff" stroke-width="1.2"/>
+    <!-- Center dot -->
+    <circle cx="0" cy="0" r="2.5" fill="#ffffff"/>
+  </g>
+  <!-- Threshold lines -->
+  <line x1="0" y1="66" x2="130" y2="66" stroke="#ffffff" stroke-width="3" stroke-dasharray="6,5" opacity="0.15"/>
+  <line x1="350" y1="66" x2="480" y2="66" stroke="#ffffff" stroke-width="3" stroke-dasharray="6,5" opacity="0.15"/>
+  <!-- Name -->
+  <text x="240" y="78" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="34" fill="#ffffff" letter-spacing="10" filter="url(#shadow)">LIMINAL</text>
+</svg>

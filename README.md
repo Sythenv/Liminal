@@ -1,5 +1,9 @@
 <p align="center">
-  <img src="app/static/img/logo.svg" alt="Liminal" width="400">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="app/static/img/logo-white.svg">
+    <source media="(prefers-color-scheme: light)" srcset="app/static/img/logo.svg">
+    <img src="app/static/img/logo-white.svg" alt="Liminal" width="400">
+  </picture>
 </p>
 
 <p align="center">
