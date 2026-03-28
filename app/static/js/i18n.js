@@ -3,7 +3,8 @@
 const TRANSLATIONS = {
     en: {
         // Nav
-        nav_register: 'Register', nav_reports: 'Reports', nav_export: 'Export', nav_settings: 'Settings',
+        nav_register: 'Register', nav_equipment: 'Equipment', nav_reports: 'Reports',
+        nav_patients: 'Patients', nav_bloodbank: 'Blood Bank', nav_export: 'Export', nav_settings: 'Settings',
         // Register page
         today: 'Today', no_samples: 'No samples registered today', tap_to_add: 'Tap the button below to register a new sample',
         patient_info: 'Patient', patient_name: 'Patient Name', age: 'Age', sex: 'Sex', ward: 'Service',
@@ -41,7 +42,8 @@ const TRANSLATIONS = {
         all_entries: 'All entries'
     },
     fr: {
-        nav_register: 'Registre', nav_reports: 'Rapports', nav_export: 'Export', nav_settings: 'Paramètres',
+        nav_register: 'Registre', nav_equipment: 'Équipements', nav_reports: 'Rapports',
+        nav_patients: 'Patients', nav_bloodbank: 'Banque de sang', nav_export: 'Export', nav_settings: 'Paramètres',
         today: "Aujourd'hui", no_samples: "Aucun échantillon enregistré aujourd'hui",
         tap_to_add: "Appuyez sur le bouton ci-dessous pour enregistrer un échantillon",
         patient_info: 'Patient', patient_name: 'Nom du Patient', age: 'Âge', sex: 'Sexe', ward: 'Service',
@@ -75,7 +77,8 @@ const TRANSLATIONS = {
         all_entries: 'Toutes les entrées'
     },
     ar: {
-        nav_register: 'السجل', nav_reports: 'التقارير', nav_export: 'تصدير', nav_settings: 'إعدادات',
+        nav_register: 'السجل', nav_equipment: 'المعدات', nav_reports: 'التقارير',
+        nav_patients: 'المرضى', nav_bloodbank: 'بنك الدم', nav_export: 'تصدير', nav_settings: 'إعدادات',
         today: 'اليوم', no_samples: 'لا توجد عينات مسجلة اليوم',
         tap_to_add: 'اضغط على الزر أدناه لتسجيل عينة جديدة',
         patient_info: 'المريض', patient_name: 'اسم المريض', age: 'العمر', sex: 'الجنس', ward: 'القسم',
