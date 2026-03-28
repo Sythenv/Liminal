@@ -131,8 +131,72 @@ body {
 .nav-unlock-btn:hover { background: var(--light-gray); }
 .nav-unlock-btn.active { color: var(--black); border-color: var(--black); }
 
-/* ===== DASHBOARD MODE ===== */
-#dashboardMode {
+/* ===== WORKLIST MODE ===== */
+.worklist-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 4px 4px;
+}
+.worklist-operator {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+.worklist-count {
+    font-size: var(--text-sm);
+    color: var(--text-light);
+}
+.worklist-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 0 4px;
+}
+.worklist-tabs::-webkit-scrollbar { display: none; }
+.wl-tab {
+    flex: 0 0 auto;
+    background: transparent;
+    border: none;
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gray);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s;
+}
+.wl-tab:hover { color: var(--text-secondary); }
+.wl-tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+.card-tat {
+    font-size: 11px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+}
+.tat-green { color: var(--sig-ok); background: var(--sig-ok-bg); }
+.tat-orange { color: #e65100; background: var(--warning-bg); }
+.tat-red { color: var(--sig-alert); background: var(--sig-alert-bg); }
+#worklistCards {
+    padding-bottom: 80px;
+}
+.worklist-footer {
+    text-align: center;
+    padding: 16px 0 80px;
+}
+
+/* ===== DASHBOARD MODE (legacy) ===== */
+#dashboardMode, #worklistMode {
     max-width: 960px;
     margin: 0 auto;
     padding: 0 16px;
@@ -1952,17 +2016,6 @@ h2 { color: var(--primary); margin: 20px 0 16px; font-size: 20px; }
     font-family: monospace;
 }
 
-.pin-demo-hint {
-    margin-top: 16px;
-    font-size: 11px;
-    color: #666;
-    letter-spacing: 0.3px;
-}
-.pin-demo-hint span {
-    font-family: 'SF Mono', 'Consolas', monospace;
-    font-weight: 600;
-    color: #999;
-}
 @keyframes shake {
     0%, 100% { transform: translateX(0); }
     20% { transform: translateX(-8px); }
@@ -2132,7 +2185,6 @@ h2 { color: var(--primary); margin: 20px 0 16px; font-size: 20px; }
     align-items: center;
 }
 .ob-numpad-wrap .pin-message { display: none; }
-.ob-numpad-wrap .pin-demo-hint { display: none; }
 
 /* --- Tests grid (screen 5) --- */
 .ob-test-grid {

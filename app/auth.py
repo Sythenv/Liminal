@@ -33,17 +33,17 @@ ROUTE_LEVELS = {
     ('POST', '/api/register/entries'):              1,
     ('POST', '/api/register/entries/*/results'):    1,
     ('POST', '/api/register/entries/*/reject'):     1,
-    ('PUT',  '/api/register/entries/*'):            3,
-    ('DELETE', '/api/register/entries/*'):           3,
+    ('PUT',  '/api/register/entries/*'):            2,
+    ('DELETE', '/api/register/entries/*'):           2,
 
     # Register — Level 2 (supervisor)
     ('POST', '/api/register/entries/*/validate'):   2,
     ('POST', '/api/register/entries/*/unreject'):    2,
     ('GET',  '/api/register/entries/*/audit'):       2,
 
-    # Patients — search is public (no rule), create is level 1, list/detail is level 2
+    # Patients — search is public, create/list is level 1, edit is level 2
     ('POST', '/api/patients'):                      1,
-    ('GET',  '/api/patients'):                      2,
+    ('GET',  '/api/patients'):                      1,
     ('PUT',  '/api/patients/*'):                    2,
 
     # Blood Bank — Level 3 for donors/units, Level 2 for transfusions

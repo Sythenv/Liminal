@@ -10,3 +10,8 @@ __pycache__/
 lab-register*.jpg
 references/
 !references/RESEARCH_NOTES_*.md
+node_modules/
+package.json
+package-lock.json
+test-results/
+playwright-report/

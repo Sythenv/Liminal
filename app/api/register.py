@@ -229,8 +229,15 @@ def create_entry():
     if collection_time and not TIME_RE.match(collection_time):
         collection_time = None
 
-    # Link to patient record if patient_fk provided
+    # Link to patient record
     patient_fk = data.get('patient_fk')
+    if not patient_fk and patient_name:
+        existing_patient = db.execute(
+            'SELECT id FROM patient WHERE LOWER(name) = LOWER(?) LIMIT 1',
+            (patient_name,)
+        ).fetchone()
+        if existing_patient:
+            patient_fk = existing_patient['id']
 
     db.execute('''INSERT INTO lab_register
         (lab_number, reception_date, reception_time, collection_time, patient_name, patient_id,
@@ -332,6 +339,7 @@ def update_results(entry_id):
     operator = get_current_operator_name()
 
     changes = []
+    matched_count = 0
 
     for test_code, result_data in data.items():
         if test_code == 'operator':
@@ -340,6 +348,7 @@ def update_results(entry_id):
         test = db.execute('SELECT id FROM test_definition WHERE code = ?', (test_code,)).fetchone()
         if not test:
             continue
+        matched_count += 1
 
         existing = db.execute('SELECT * FROM lab_result WHERE register_id = ? AND test_id = ?',
                               (entry_id, test['id'])).fetchone()
@@ -371,6 +380,9 @@ def update_results(entry_id):
         # Track result changes for audit
         if result_value != old_value:
             changes.append((test_code, old_value, result_value))
+
+    if matched_count == 0:
+        return jsonify({'error': 'No recognized test codes in payload'}), 400
 
     # Auto-update register status
     all_results = db.execute('''SELECT requested, result_status FROM lab_result

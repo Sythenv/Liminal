@@ -34,7 +34,11 @@ const TRANSLATIONS = {
         download: 'Download', settings: 'Settings', site_config: 'Site Configuration',
         site_name: 'Site Name', site_code: 'Site Code', language: 'Language',
         save: 'Save', test_menu: 'Test Menu', order: 'Order', code: 'Code',
-        type: 'Type', active: 'Active'
+        type: 'Type', active: 'Active',
+        // Worklist
+        wl_waiting: 'Waiting', wl_inprogress: 'In progress', wl_review: 'Review',
+        wl_completed: 'Completed', wl_all: 'All', wl_empty: 'No pending samples',
+        all_entries: 'All entries'
     },
     fr: {
         nav_register: 'Registre', nav_reports: 'Rapports', nav_export: 'Export', nav_settings: 'Paramètres',
@@ -64,7 +68,11 @@ const TRANSLATIONS = {
         download: 'Télécharger', settings: 'Paramètres', site_config: 'Configuration du Site',
         site_name: 'Nom du Site', site_code: 'Code Site', language: 'Langue',
         save: 'Enregistrer', test_menu: 'Menu des Tests', order: 'Ordre', code: 'Code',
-        type: 'Type', active: 'Actif'
+        type: 'Type', active: 'Actif',
+        // Worklist
+        wl_waiting: 'En attente', wl_inprogress: 'En cours', wl_review: 'Validation',
+        wl_completed: 'Terminés', wl_all: 'Tous', wl_empty: 'Aucun échantillon en attente',
+        all_entries: 'Toutes les entrées'
     },
     ar: {
         nav_register: 'السجل', nav_reports: 'التقارير', nav_export: 'تصدير', nav_settings: 'إعدادات',
@@ -94,7 +102,11 @@ const TRANSLATIONS = {
         download: 'تحميل', settings: 'إعدادات', site_config: 'إعدادات الموقع',
         site_name: 'اسم الموقع', site_code: 'رمز الموقع', language: 'اللغة',
         save: 'حفظ', test_menu: 'قائمة الفحوصات', order: 'الترتيب', code: 'الرمز',
-        type: 'النوع', active: 'نشط'
+        type: 'النوع', active: 'نشط',
+        // Worklist
+        wl_waiting: 'قيد الانتظار', wl_inprogress: 'جاري', wl_review: 'مراجعة',
+        wl_completed: 'مكتمل', wl_all: 'الكل', wl_empty: 'لا توجد عينات معلقة',
+        all_entries: 'جميع الإدخالات'
     }
 };
 

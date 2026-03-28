@@ -7,6 +7,10 @@ let currentEntryId = null;
 let currentEntryData = null;
 let debounceTimer = null;
 let isRegisterMode = false;
+let isWorklistMode = false;
+let worklistStatusFilter = '';
+
+const URGENCY_WARDS = ['URGENCES', 'EMERGENCY', 'ER', 'URG'];
 
 // ===== STRUCTURED TEST DEFINITIONS =====
 const STRUCTURED_TESTS = {
@@ -186,13 +190,151 @@ function openResultsDirect(entry) {
 
 function enterRegisterMode() {
     isRegisterMode = true;
+    isWorklistMode = false;
     document.getElementById('landingMode').style.display = 'none';
-    document.getElementById('dashboardMode').style.display = 'block';
+    document.getElementById('worklistMode').style.display = 'none';
+    document.getElementById('registerMode').style.display = 'block';
+    document.getElementById('btnNewEntry').style.display = 'flex';
     const nav = document.getElementById('appNav');
     const header = document.getElementById('appHeader');
     if (nav) nav.style.display = '';
     if (header) header.style.display = '';
-    loadDashboard();
+    loadEntries();
+}
+
+// ===== WORKLIST MODE =====
+
+function enterWorklist(level) {
+    isWorklistMode = true;
+    isRegisterMode = false;
+    document.getElementById('landingMode').style.display = 'none';
+    document.getElementById('worklistMode').style.display = 'block';
+    document.getElementById('btnNewEntry').style.display = 'flex';
+    const nav = document.getElementById('appNav');
+    const header = document.getElementById('appHeader');
+    if (nav) nav.style.display = '';
+    if (header) header.style.display = '';
+
+    // Show operator name
+    const opEl = document.getElementById('worklistOperator');
+    if (opEl && currentOperatorName) opEl.textContent = currentOperatorName;
+
+    // Configure tabs based on level
+    configureTabs(level);
+
+    // Load entries for default tab
+    const activeTab = document.querySelector('.wl-tab.active');
+    if (activeTab) loadWorklistEntries(activeTab.dataset.status);
+}
+
+function configureTabs(level) {
+    const tabs = document.querySelectorAll('.wl-tab');
+    tabs.forEach(t => t.classList.remove('active'));
+
+    if (level >= 2) {
+        // Supervisor/admin: default to REVIEW
+        const tab = document.querySelector('.wl-tab[data-status="REVIEW"]');
+        if (tab) tab.classList.add('active');
+    } else {
+        // Labtech: default to REGISTERED (en attente)
+        const tab = document.querySelector('.wl-tab[data-status="REGISTERED"]');
+        if (tab) tab.classList.add('active');
+    }
+}
+
+function loadWorklistEntries(statusFilter) {
+    worklistStatusFilter = statusFilter;
+    const url = statusFilter
+        ? `/api/register/entries?date_from=2020-01-01&date_to=2099-12-31&status=${statusFilter}`
+        : `/api/register/entries?date_from=2020-01-01&date_to=2099-12-31`;
+
+    fetch(url)
+        .then(r => r.json())
+        .then(data => {
+            currentTests = data.tests || currentTests;
+            let entries = data.entries;
+
+            // Sort: urgency wards first, then FIFO (oldest first)
+            entries = sortByUrgency(entries);
+
+            const container = document.getElementById('worklistCards');
+            const empty = document.getElementById('worklistEmpty');
+            const countEl = document.getElementById('worklistCount');
+            container.innerHTML = '';
+
+            countEl.textContent = entries.length + (getCurrentLang() === 'fr' ? ' échantillon(s)' : ' sample(s)');
+
+            if (entries.length === 0) {
+                empty.style.display = 'block';
+                return;
+            }
+            empty.style.display = 'none';
+
+            if (statusFilter === 'REVIEW' && currentLevel >= 2) {
+                container.appendChild(buildReviewTable(entries));
+            } else {
+                entries.forEach(entry => {
+                    container.appendChild(buildWorklistCard(entry));
+                });
+            }
+        });
+}
+
+function sortByUrgency(entries) {
+    return entries.sort((a, b) => {
+        const aUrg = URGENCY_WARDS.includes((a.ward || '').toUpperCase()) ? 0 : 1;
+        const bUrg = URGENCY_WARDS.includes((b.ward || '').toUpperCase()) ? 0 : 1;
+        if (aUrg !== bUrg) return aUrg - bUrg;
+        // FIFO: oldest first
+        const aTime = a.reception_date + ' ' + (a.reception_time || '00:00');
+        const bTime = b.reception_date + ' ' + (b.reception_time || '00:00');
+        return aTime.localeCompare(bTime);
+    });
+}
+
+function buildWorklistCard(entry) {
+    const card = buildCard(entry);
+
+    // Add TAT indicator
+    const tat = computeTAT(entry);
+    const tatEl = document.createElement('span');
+    tatEl.className = 'card-tat tat-' + tat.color;
+    tatEl.textContent = tat.label;
+
+    const top = card.querySelector('.card-top');
+    if (top) top.appendChild(tatEl);
+
+    return card;
+}
+
+function computeTAT(entry) {
+    const timeStr = entry.reception_date + 'T' + (entry.reception_time || '00:00') + ':00';
+    const then = new Date(timeStr);
+    const now = new Date();
+    const diffMin = Math.floor((now - then) / 60000);
+
+    if (diffMin < 0) return { label: '0min', color: 'green' };
+
+    let label;
+    if (diffMin < 60) {
+        label = diffMin + 'min';
+    } else {
+        const h = Math.floor(diffMin / 60);
+        const m = diffMin % 60;
+        label = h + 'h' + String(m).padStart(2, '0');
+    }
+
+    let color;
+    if (diffMin < 60) color = 'green';
+    else if (diffMin < 120) color = 'orange';
+    else color = 'red';
+
+    return { label, color };
+}
+
+function refreshWorklist() {
+    if (isWorklistMode) loadWorklistEntries(worklistStatusFilter);
+    else if (isRegisterMode) loadEntries();
 }
 
 function loadDashboard() {
@@ -442,19 +584,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // Button group handlers
     setupButtonGroups();
 
-    // Dashboard stat cards
-    document.querySelectorAll('.stat-card').forEach(card => {
-        card.addEventListener('click', () => {
-            document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
-            card.classList.add('active');
-            loadDashboardCards(card.dataset.status);
+    // Worklist tabs
+    document.querySelectorAll('.wl-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.wl-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            loadWorklistEntries(tab.dataset.status);
         });
     });
-    document.getElementById('btnShowAll').addEventListener('click', showFullRegister);
+    document.getElementById('btnShowAll').addEventListener('click', () => {
+        document.getElementById('worklistMode').style.display = 'none';
+        enterRegisterMode();
+    });
 
-    // Listen for nav unlock to switch to register mode
+    // Listen for nav unlock to switch to worklist
     document.addEventListener('navUnlocked', e => {
-        if (e.detail.level >= 2) enterRegisterMode();
+        if (e.detail.level >= 1) enterWorklist(e.detail.level);
     });
 });
 
@@ -856,7 +1001,8 @@ function submitEntry() {
         .then(entry => {
             closeWizard();
             showSuccess(entry.lab_number);
-            if (isRegisterMode) loadEntries();
+            if (isWorklistMode) loadWorklistEntries(worklistStatusFilter);
+            else if (isRegisterMode) loadEntries();
             else setTimeout(refocusLanding, 2100);
         });
     };
@@ -1532,7 +1678,7 @@ function executeReject(reason) {
         if (r.ok) {
             closeResultModal();
             showSuccess('REJECTED', 'var(--primary)');
-            loadEntries();
+            refreshWorklist();
         } else {
             r.json().then(d => showModal({ title: 'Error', message: d.error || 'Rejection failed', type: 'danger' }));
         }
@@ -1549,12 +1695,7 @@ function executeValidate(entryId, bypassFourEyes) {
         if (r.ok) {
             closeResultModal();
             showSuccess('Validated');
-            const dashboard = document.getElementById('dashboardMode');
-            if (dashboard && dashboard.style.display !== 'none') {
-                loadDashboard();
-            } else {
-                loadEntries();
-            }
+            refreshWorklist();
         } else {
             r.json().then(d => {
                 if (d.four_eyes) {
@@ -1584,7 +1725,7 @@ function executeUnreject(entryId) {
         if (r.ok) {
             closeResultModal();
             showSuccess('Restored');
-            loadEntries();
+            refreshWorklist();
         } else {
             r.json().then(d => showModal({ title: 'Error', message: d.error || 'Unreject failed', type: 'danger' }));
         }
@@ -1663,7 +1804,7 @@ function submitPayload(payload) {
         if (r.ok) {
             closeResultModal();
             showSuccess(getCurrentLang() === 'fr' ? 'Sauvegarde' : 'Saved');
-            if (isRegisterMode) loadEntries();
+            refreshWorklist();
         } else {
             r.json().then(d => showModal({ title: 'Error', message: d.error || 'Save failed', type: 'danger' }));
         }

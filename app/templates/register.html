@@ -98,33 +98,26 @@
     <button class="landing-unlock-btn" id="landingUnlockBtn">&#128274;</button>
 </div>
 
-<!-- ===== REGISTER MODE (supervisor — unlocked via PIN) ===== -->
-<!-- ===== DASHBOARD MODE (supervisor — after unlock) ===== -->
-<div id="dashboardMode" style="display:none">
-    <div class="dashboard-header">
-        <h2 class="dashboard-title">Dashboard</h2>
+<!-- ===== WORKLIST MODE (role-aware — after PIN unlock) ===== -->
+<div id="worklistMode" style="display:none">
+    <div class="worklist-header">
+        <span class="worklist-operator" id="worklistOperator"></span>
+        <span class="worklist-count" id="worklistCount"></span>
     </div>
-    <div class="dashboard-stats" id="dashboardStats">
-        <button class="stat-card active" data-status="REVIEW" id="statReview">
-            <span class="stat-count">0</span>
-            <span class="stat-label">To validate</span>
-        </button>
-        <button class="stat-card" data-status="REGISTERED,IN_PROGRESS" id="statPending">
-            <span class="stat-count">0</span>
-            <span class="stat-label">In progress</span>
-        </button>
-        <button class="stat-card" data-status="REJECTED" id="statRejected">
-            <span class="stat-count">0</span>
-            <span class="stat-label">Rejected</span>
-        </button>
-        <button class="stat-card" data-status="COMPLETED" id="statCompleted">
-            <span class="stat-count">0</span>
-            <span class="stat-label">Completed</span>
-        </button>
+    <div class="worklist-tabs" id="worklistTabs">
+        <button class="wl-tab" data-status="REGISTERED" data-i18n="wl_waiting">En attente</button>
+        <button class="wl-tab" data-status="IN_PROGRESS" data-i18n="wl_inprogress">En cours</button>
+        <button class="wl-tab" data-status="REVIEW" data-i18n="wl_review">Review</button>
+        <button class="wl-tab" data-status="COMPLETED" data-i18n="wl_completed">Terminés</button>
+        <button class="wl-tab" data-status="" data-i18n="wl_all">Tous</button>
     </div>
-    <div class="card-list" id="dashboardCards"></div>
-    <div class="dashboard-footer">
-        <button id="btnShowAll" class="dashboard-all-btn">All entries</button>
+    <div class="card-list" id="worklistCards"></div>
+    <div id="worklistEmpty" class="empty-state" style="display:none">
+        <div class="empty-icon">&#9989;</div>
+        <p data-i18n="wl_empty">No pending samples</p>
+    </div>
+    <div class="worklist-footer">
+        <button id="btnShowAll" class="dashboard-all-btn" data-i18n="all_entries">All entries</button>
     </div>
 </div>
 
@@ -151,11 +144,12 @@
         <p class="empty-hint" data-i18n="tap_to_add">Tap the button below to register a new sample</p>
     </div>
 
-    <!-- FAB - New Entry -->
-    <button class="fab" id="btnNewEntry" title="New sample">
-        <span class="fab-icon">+</span>
-    </button>
 </div>
+
+<!-- FAB - New Entry (shared between worklist and register) -->
+<button class="fab" id="btnNewEntry" title="New sample" style="display:none">
+    <span class="fab-icon">+</span>
+</button>
 
 <!-- ===== WIZARD MODAL ===== -->
 <div id="wizardModal" class="wizard-overlay" style="display:none">
