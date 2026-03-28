@@ -42,8 +42,8 @@ const TRANSLATIONS = {
         all_entries: 'All entries'
     },
     fr: {
-        nav_register: 'Registre', nav_equipment: 'Équipements', nav_reports: 'Rapports',
-        nav_patients: 'Patients', nav_bloodbank: 'Banque de sang', nav_export: 'Export', nav_settings: 'Paramètres',
+        nav_register: 'Registre', nav_equipment: 'Équip.', nav_reports: 'Rapports',
+        nav_patients: 'Patients', nav_bloodbank: 'Sang', nav_export: 'Export', nav_settings: 'Config',
         today: "Aujourd'hui", no_samples: "Aucun échantillon enregistré aujourd'hui",
         tap_to_add: "Appuyez sur le bouton ci-dessous pour enregistrer un échantillon",
         patient_info: 'Patient', patient_name: 'Nom du Patient', age: 'Âge', sex: 'Sexe', ward: 'Service',
@@ -134,7 +134,14 @@ function applyTranslations() {
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
         const translated = t(key);
-        if (translated) el.textContent = translated;
+        if (!translated) return;
+        // If element has a .nav-label child, update only that
+        const label = el.querySelector('.nav-label');
+        if (label) {
+            label.textContent = translated;
+        } else {
+            el.textContent = translated;
+        }
     });
 }
 
