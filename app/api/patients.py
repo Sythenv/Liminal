@@ -44,22 +44,30 @@ def search():
             LIMIT 10''', (q_dob,)).fetchall()
         return jsonify([dict(r) for r in results])
 
-    # Search by name
-    results = db.execute('''SELECT id, patient_number, name, date_of_birth, age, age_unit, sex, village
+    # Search by name (token-based: "kam dial" matches "Kamal Diallo")
+    tokens = q.strip().lower().split()
+    if not tokens:
+        return jsonify([])
+
+    conditions = ' AND '.join(['LOWER(name) LIKE ?' for _ in tokens])
+    params = [f'%{t}%' for t in tokens]
+
+    results = db.execute(f'''SELECT id, patient_number, name, date_of_birth, age, age_unit, sex, village
         FROM patient
-        WHERE name LIKE ?
+        WHERE {conditions}
         ORDER BY name ASC
-        LIMIT 10''', (f'%{q}%',)).fetchall()
+        LIMIT 10''', params).fetchall()
 
     if results:
         return jsonify([dict(r) for r in results])
 
     # Fallback: search lab_register directly (for entries without patient records)
-    results = db.execute('''SELECT DISTINCT patient_name as name, patient_id, age, sex, ward
+    reg_conditions = ' AND '.join(['LOWER(patient_name) LIKE ?' for _ in tokens])
+    results = db.execute(f'''SELECT DISTINCT patient_name as name, patient_id, age, sex, ward
         FROM lab_register
-        WHERE patient_name LIKE ?
+        WHERE {reg_conditions}
         ORDER BY reception_date DESC
-        LIMIT 10''', (f'%{q}%',)).fetchall()
+        LIMIT 10''', params).fetchall()
 
     return jsonify([dict(r) for r in results])
 
