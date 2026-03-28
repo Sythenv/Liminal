@@ -82,4 +82,4 @@ rm data/lab.db
 
 ## License
 
-MIT
+[GPL v3](LICENSE)
