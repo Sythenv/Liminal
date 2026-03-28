@@ -162,6 +162,23 @@ def entry_context(entry_id):
     for t in test_rows:
         panic_thresholds[t['code']] = {'low': t['panic_low'], 'high': t['panic_high']}
 
+    # Reference ranges for all requested tests
+    reference_ranges = {}
+    ref_rows = db.execute('''SELECT td.code, td.reference_low, td.reference_high, td.unit
+        FROM lab_result lr JOIN test_definition td ON td.id = lr.test_id
+        WHERE lr.register_id = ? AND lr.requested = 1''', (entry_id,)).fetchall()
+    for t in ref_rows:
+        reference_ranges[t['code']] = {
+            'low': t['reference_low'], 'high': t['reference_high'], 'unit': t['unit']
+        }
+
+    # Validation info (from audit log)
+    validate_audit = db.execute('''SELECT operator, timestamp
+        FROM audit_log WHERE table_name = 'lab_register' AND record_id = ? AND action = 'VALIDATE'
+        ORDER BY timestamp DESC LIMIT 1''', (entry_id,)).fetchone()
+    validated_by = validate_audit['operator'] if validate_audit else None
+    validated_at = validate_audit['timestamp'] if validate_audit else None
+
     return jsonify({
         'entered_by': entered_by,
         'entered_at': entered_at,
@@ -171,7 +188,10 @@ def entry_context(entry_id):
         'ward': entry['ward'],
         'specimen_type': entry['specimen_type'],
         'history': history,
-        'panic_thresholds': panic_thresholds
+        'panic_thresholds': panic_thresholds,
+        'reference_ranges': reference_ranges,
+        'validated_by': validated_by,
+        'validated_at': validated_at
     })
 
 

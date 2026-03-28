@@ -366,6 +366,21 @@ function buildWorklistCard(entry) {
         }
     }
 
+    // Print button for COMPLETED entries
+    if (entry.status === 'COMPLETED') {
+        const printRow = document.createElement('div');
+        printRow.className = 'card-actions';
+        const pBtn = document.createElement('button');
+        pBtn.className = 'card-print-btn';
+        pBtn.textContent = getCurrentLang() === 'fr' ? 'Imprimer' : 'Print';
+        pBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            printResults(entry.id);
+        });
+        printRow.appendChild(pBtn);
+        card.appendChild(printRow);
+    }
+
     return card;
 }
 
@@ -397,6 +412,97 @@ function computeTAT(entry) {
 function refreshWorklist() {
     if (isWorklistMode) loadWorklistEntries(worklistStatusFilter);
     else if (isRegisterMode) loadEntries();
+}
+
+// ===== PRINT RESULTS =====
+
+function printResults(entryId) {
+    // Fetch entry + context in parallel
+    Promise.all([
+        fetch(`/api/register/entries/lookup?lab_number=&entry_id=${entryId}`).then(r => r.json()).catch(() => null),
+        fetch(`/api/register/entries/${entryId}/context`).then(r => r.json()),
+        fetch(`/api/register/entries?date_from=2020-01-01&date_to=2099-12-31`).then(r => r.json())
+    ]).then(([_, ctx, allData]) => {
+        // Find the entry from allData
+        const entry = allData.entries.find(e => e.id === entryId);
+        if (!entry) return;
+        const tests = allData.tests || currentTests;
+
+        // Build print HTML
+        const siteName = document.querySelector('.app-title')?.textContent || 'Liminal';
+        const today = new Date().toISOString().split('T')[0];
+
+        let resultsHTML = '';
+        tests.forEach(t => {
+            const r = entry.results[t.code];
+            if (!r || !r.requested || !r.result_value) return;
+            const ref = ctx.reference_ranges?.[t.code];
+            let refStr = '';
+            if (ref && ref.low != null && ref.high != null) refStr = `${ref.low} - ${ref.high}`;
+            else if (ref && ref.low != null) refStr = `> ${ref.low}`;
+            else if (ref && ref.high != null) refStr = `< ${ref.high}`;
+            const unit = ref?.unit || '';
+
+            let displayVal = r.result_value;
+            if (STRUCTURED_TESTS[t.code]) {
+                displayVal = formatStructuredBadge(t.code, r.result_value);
+            }
+
+            // Check panic
+            let isPanic = false;
+            const thresh = ctx.panic_thresholds?.[t.code];
+            if (thresh) {
+                const numVal = parseFloat(r.result_value);
+                if (!isNaN(numVal)) {
+                    if ((thresh.low != null && numVal < thresh.low) || (thresh.high != null && numVal > thresh.high)) {
+                        isPanic = true;
+                    }
+                }
+            }
+
+            resultsHTML += `<tr class="${isPanic ? 'print-panic' : ''}">
+                <td>${esc(t.name_en || t.code)}</td>
+                <td class="print-result-val">${esc(displayVal)} ${esc(unit)}</td>
+                <td>${esc(refStr)}</td>
+            </tr>`;
+        });
+
+        const age = entry.age ? `${entry.age}${entry.age_unit || 'Y'}` : '';
+        const patientLine = [entry.patient_name, age, entry.sex, entry.ward].filter(Boolean).join(' · ');
+
+        const div = document.createElement('div');
+        div.className = 'print-report';
+        div.innerHTML = `
+            <div class="print-header">
+                <div class="print-site">${esc(siteName)}</div>
+                <div class="print-date">${esc(today)}</div>
+            </div>
+            <div class="print-patient">
+                <div class="print-patient-name">${esc(entry.patient_name)}</div>
+                <div class="print-patient-meta">${esc(patientLine)}</div>
+                <div class="print-lab-number">${esc(entry.lab_number)}</div>
+                <div class="print-specimen">${esc(entry.specimen_type || '')} · Collection: ${esc(entry.collection_time || entry.reception_time || '')}</div>
+            </div>
+            <table class="print-results-table">
+                <thead><tr><th>Test</th><th>Result</th><th>Ref. Range</th></tr></thead>
+                <tbody>${resultsHTML}</tbody>
+            </table>
+            <div class="print-footer">
+                <div class="print-signatures">
+                    <div>Entered by: ${esc(ctx.entered_by || '—')}</div>
+                    <div>Validated by: ${esc(ctx.validated_by || '—')}</div>
+                    <div>TAT: ${esc(ctx.turnaround || '—')}</div>
+                </div>
+                <div class="print-sign-line">
+                    <span>Supervisor signature: ________________________</span>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(div);
+        window.print();
+        setTimeout(() => div.remove(), 1000);
+    });
 }
 
 function loadDashboard() {
