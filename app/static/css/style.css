@@ -114,6 +114,7 @@ body {
     white-space: nowrap;
 }
 .nav-link:hover { background: var(--light-gray); }
+.nav-link:active { background: var(--border); }
 .nav-locked { display: none; }
 .nav-locked.unlocked { display: inline; }
 .nav-unlock-btn {
@@ -129,7 +130,44 @@ body {
     color: var(--gray);
 }
 .nav-unlock-btn:hover { background: var(--light-gray); }
+.nav-unlock-btn:active { background: var(--border); }
 .nav-unlock-btn.active { color: var(--black); border-color: var(--black); }
+@media (max-width: 768px) {
+    .app-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        top: auto;
+        z-index: 100;
+        justify-content: space-around;
+        padding: 6px 4px;
+        border-top: 1px solid var(--border);
+        border-bottom: none;
+        background: var(--white);
+        gap: 0;
+    }
+    .nav-link {
+        font-size: 10px;
+        padding: 8px 6px;
+        text-align: center;
+        min-width: 44px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .nav-unlock-btn {
+        margin-left: 0;
+        min-width: 44px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+    }
+    .content { padding-bottom: 64px; }
+}
 
 /* ===== WORKLIST MODE ===== */
 .worklist-header {
@@ -568,6 +606,10 @@ body {
     border-radius: 0 50px 50px 0;
 }
 .landing-lookup-btn:hover { background: var(--hover-dark); }
+.landing-lookup-btn:active { transform: scale(0.95); }
+@media (max-width: 768px) {
+    .landing-lookup-btn { min-width: 64px; min-height: 64px; font-size: 26px; }
+}
 .landing-new-btn {
     display: flex;
     align-items: center;
@@ -824,6 +866,9 @@ body {
     transition: transform 0.2s;
 }
 .fab:hover { transform: scale(1.1); }
+@media (max-width: 768px) {
+    .fab { bottom: 80px; }
+}
 .fab:active { transform: scale(0.95); }
 .fab-icon { line-height: 1; }
 
@@ -1062,6 +1107,7 @@ body {
     cursor: pointer;
     text-align: center;
 }
+.sex-btn:active { transform: scale(0.95); }
 .sex-btn.active { background: var(--primary); color: var(--white); border-color: var(--primary); }
 
 /* Ward buttons */
@@ -1069,6 +1115,11 @@ body {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 8px;
+}
+@media (max-width: 768px) {
+    .ward-btns { grid-template-columns: repeat(3, 1fr); }
+    .ward-btn { padding: 14px 8px; min-height: 44px; }
+    .sex-btn { min-height: 44px; }
 }
 .ward-btn {
     padding: 12px 8px;
@@ -1080,6 +1131,7 @@ body {
     cursor: pointer;
     text-align: center;
 }
+.ward-btn:active { transform: scale(0.95); }
 .ward-btn.active { background: var(--primary); color: var(--white); border-color: var(--primary); }
 
 /* ===== TEST SELECTION ===== */
@@ -1106,6 +1158,12 @@ body {
     cursor: pointer;
     text-align: center;
     transition: all 0.15s;
+    min-height: 44px;
+}
+.test-btn:active { transform: scale(0.95); }
+@media (max-width: 768px) {
+    .test-btns { grid-template-columns: repeat(2, 1fr); }
+    .test-btn { padding: 14px 8px; font-size: 14px; }
 }
 .test-btn.selected {
     background: var(--primary);
