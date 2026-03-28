@@ -648,7 +648,7 @@ function closeWizard() {
 
 function goStep(n) {
     [1, 2, 3].forEach(i => {
-        document.getElementById(`step${i}`).style.display = i === n ? 'block' : 'none';
+        document.getElementById(`step${i}`).style.display = i === n ? 'flex' : 'none';
     });
     if (n === 3) buildConfirmSummary();
 }
