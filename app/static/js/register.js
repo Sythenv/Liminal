@@ -899,6 +899,47 @@ function buildCard(entry) {
 // ===== WIZARD: NEW ENTRY =====
 
 function startNewEntry() {
+    // Check for saved wizard state
+    const saved = sessionStorage.getItem('liminal_wizard');
+    if (saved) {
+        try {
+            const restored = JSON.parse(saved);
+            if (restored.patient_name || restored.ward) {
+                wizardData = restored;
+                buildTestSelection();
+                document.getElementById('wizardModal').style.display = 'flex';
+                goStep(1);
+                // Restore form fields
+                if (wizardData.patient_name) document.getElementById('wPatientName').value = wizardData.patient_name;
+                if (wizardData.age) document.getElementById('wAge').value = wizardData.age;
+                if (wizardData.collection_time) document.getElementById('wCollectionTime').value = wizardData.collection_time;
+                if (wizardData.age_unit) {
+                    document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('active'));
+                    const ub = document.querySelector(`.unit-btn[data-unit="${wizardData.age_unit}"]`);
+                    if (ub) ub.classList.add('active');
+                }
+                if (wizardData.sex) {
+                    document.querySelectorAll('.sex-btn').forEach(b => b.classList.remove('active'));
+                    const sb = document.querySelector(`.sex-btn[data-sex="${wizardData.sex}"]`);
+                    if (sb) sb.classList.add('active');
+                }
+                if (wizardData.ward) {
+                    document.querySelectorAll('.ward-btn').forEach(b => b.classList.remove('active'));
+                    const wb = document.querySelector(`.ward-btn[data-ward="${wizardData.ward}"]`);
+                    if (wb) wb.classList.add('active');
+                }
+                if (wizardData.requested_tests) {
+                    wizardData.requested_tests.forEach(code => {
+                        const tb = document.querySelector(`.test-btn[data-code="${code}"]`);
+                        if (tb) tb.classList.add('selected');
+                    });
+                }
+                return;
+            }
+        } catch(e) {}
+        sessionStorage.removeItem('liminal_wizard');
+    }
+
     wizardData = { age_unit: 'Y', patient_fk: null };
     document.getElementById('wPatientName').value = '';
     document.getElementById('wAge').value = '';
@@ -957,6 +998,7 @@ function clearPatientSelection() {
 
 function closeWizard() {
     document.getElementById('wizardModal').style.display = 'none';
+    sessionStorage.removeItem('liminal_wizard');
 }
 
 function goStep(n) {
@@ -964,6 +1006,8 @@ function goStep(n) {
         document.getElementById(`step${i}`).style.display = i === n ? 'flex' : 'none';
     });
     if (n === 3) buildConfirmSummary();
+    // Autosave wizard state
+    sessionStorage.setItem('liminal_wizard', JSON.stringify(wizardData));
 }
 
 function setCollectionTimeNow() {
