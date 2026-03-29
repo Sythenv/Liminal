@@ -980,9 +980,8 @@ function applyNavUnlock() {
             link.classList.add('unlocked');
         }
     });
-    if (btn && currentOperatorName) {
-        btn.textContent = '\u{1F513} ' + currentOperatorName;
-        btn.classList.add('active');
+    if (btn) {
+        btn.style.display = 'none';
     }
     document.dispatchEvent(new CustomEvent('navUnlocked', { detail: { level: currentLevel } }));
 }
