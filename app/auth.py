@@ -20,10 +20,10 @@ import time
 WEAK_PINS = {'0000','1111','2222','3333','4444','5555','6666','7777','8888','9999',
              '1234','4321','0123','1230','9876','6789'}
 
-# Rate limiting: track failed PIN attempts per IP
+# Rate limiting: global counter (localhost = single IP, per-IP is useless)
 RATE_LIMIT_MAX = 5       # max failures before lockout
 RATE_LIMIT_WINDOW = 60   # lockout duration in seconds
-_failed_attempts = {}     # {ip: {'count': int, 'first_fail': float, 'locked_until': float}}
+_failed_attempts = {'count': 0, 'first_fail': 0, 'locked_until': 0}
 
 from flask import Blueprint, request, jsonify, g
 from app.db import get_db
@@ -122,12 +122,29 @@ def generate_salt():
 
 
 def hash_pin(pin, salt):
+    """Hash PIN with scrypt (CPU+memory hard, resistant to brute-force).
+    Falls back to SHA-256 check for legacy hashes during migration."""
+    salt_bytes = bytes.fromhex(salt)
+    dk = hashlib.scrypt(str(pin).encode('utf-8'), salt=salt_bytes, n=16384, r=8, p=1, dklen=32)
+    return dk.hex()
+
+
+def _hash_pin_legacy(pin, salt):
+    """Legacy SHA-256 hash for migration compatibility."""
     return hashlib.sha256((str(pin) + salt).encode('utf-8')).hexdigest()
 
 
 def verify_pin(pin, operator_row):
-    expected = hash_pin(pin, operator_row['pin_salt'])
-    return expected == operator_row['pin_hash']
+    """Verify PIN against stored hash. Supports both scrypt and legacy SHA-256."""
+    salt = operator_row['pin_salt']
+    stored = operator_row['pin_hash']
+    # Try scrypt first
+    if hash_pin(pin, salt) == stored:
+        return True
+    # Fallback to legacy SHA-256 (pre-migration hashes)
+    if _hash_pin_legacy(pin, salt) == stored:
+        return True
+    return False
 
 
 def validate_new_pin(db, pin):
@@ -147,6 +164,11 @@ def get_operator_by_pin(db, pin):
     operators = db.execute('SELECT * FROM operator WHERE is_active = 1').fetchall()
     for op in operators:
         if verify_pin(pin, op):
+            # Auto-upgrade legacy SHA-256 hash to scrypt on successful login
+            scrypt_hash = hash_pin(pin, op['pin_salt'])
+            if op['pin_hash'] != scrypt_hash:
+                db.execute('UPDATE operator SET pin_hash = ? WHERE id = ?', (scrypt_hash, op['id']))
+                db.commit()
             return op
     return None
 
@@ -159,37 +181,37 @@ def get_current_operator_name():
 
 # ===== RATE LIMITING =====
 
-def _check_rate_limit(ip):
+def _check_rate_limit():
     """Returns seconds remaining in lockout, or 0 if OK."""
-    entry = _failed_attempts.get(ip)
-    if not entry:
-        return 0
-    if entry.get('locked_until', 0) > time.time():
-        return int(entry['locked_until'] - time.time())
-    # Reset if window expired
-    if time.time() - entry.get('first_fail', 0) > RATE_LIMIT_WINDOW:
-        _failed_attempts.pop(ip, None)
-        return 0
+    if _failed_attempts['locked_until'] > time.time():
+        return int(_failed_attempts['locked_until'] - time.time())
+    if time.time() - _failed_attempts['first_fail'] > RATE_LIMIT_WINDOW:
+        _failed_attempts['count'] = 0
+        _failed_attempts['first_fail'] = 0
+        _failed_attempts['locked_until'] = 0
     return 0
 
 
-def _record_failure(ip):
+def _record_failure():
     """Record a failed attempt. Returns True if now locked out."""
     now = time.time()
-    entry = _failed_attempts.get(ip)
-    if not entry or now - entry.get('first_fail', 0) > RATE_LIMIT_WINDOW:
-        _failed_attempts[ip] = {'count': 1, 'first_fail': now, 'locked_until': 0}
+    if _failed_attempts['count'] == 0 or now - _failed_attempts['first_fail'] > RATE_LIMIT_WINDOW:
+        _failed_attempts['count'] = 1
+        _failed_attempts['first_fail'] = now
+        _failed_attempts['locked_until'] = 0
         return False
-    entry['count'] += 1
-    if entry['count'] >= RATE_LIMIT_MAX:
-        entry['locked_until'] = now + RATE_LIMIT_WINDOW
+    _failed_attempts['count'] += 1
+    if _failed_attempts['count'] >= RATE_LIMIT_MAX:
+        _failed_attempts['locked_until'] = now + RATE_LIMIT_WINDOW
         return True
     return False
 
 
-def _clear_failures(ip):
+def _clear_failures():
     """Clear failures on successful auth."""
-    _failed_attempts.pop(ip, None)
+    _failed_attempts['count'] = 0
+    _failed_attempts['first_fail'] = 0
+    _failed_attempts['locked_until'] = 0
 
 
 # ===== MIDDLEWARE =====
@@ -227,22 +249,21 @@ def auth_middleware():
     if not pin:
         return jsonify({'error': 'Authentication required', 'required_level': required_level}), 401
 
-    # Rate limit check
-    ip = request.remote_addr or '127.0.0.1'
-    lockout = _check_rate_limit(ip)
+    # Rate limit check (global — localhost means per-IP is useless)
+    lockout = _check_rate_limit()
     if lockout > 0:
         return jsonify({'error': f'Too many failed attempts. Retry in {lockout}s', 'locked': True}), 429
 
     operator = get_operator_by_pin(db, pin)
     if not operator:
-        locked = _record_failure(ip)
+        locked = _record_failure()
         if locked:
             from app.audit import log_action
-            log_action(db, 'LOCKOUT', 'auth', 0, [('ip', None, ip)], 'SYSTEM')
+            log_action(db, 'LOCKOUT', 'auth', 0, [], 'SYSTEM')
             db.commit()
         return jsonify({'error': 'Invalid PIN'}), 401
 
-    _clear_failures(ip)
+    _clear_failures()
 
     if operator['level'] < required_level:
         return jsonify({'error': f'Level {required_level} required, you are level {operator["level"]}'}), 403
@@ -307,8 +328,7 @@ def setup():
 @bp.route('/verify', methods=['POST'])
 def verify():
     """Verify a PIN and return operator info."""
-    ip = request.remote_addr or '127.0.0.1'
-    lockout = _check_rate_limit(ip)
+    lockout = _check_rate_limit()
     if lockout > 0:
         return jsonify({'error': f'Too many failed attempts. Retry in {lockout}s', 'locked': True}), 429
 
@@ -318,14 +338,14 @@ def verify():
     db = get_db()
     operator = get_operator_by_pin(db, pin)
     if not operator:
-        locked = _record_failure(ip)
+        locked = _record_failure()
         if locked:
             from app.audit import log_action
-            log_action(db, 'LOCKOUT', 'auth', 0, [('ip', None, ip)], 'SYSTEM')
+            log_action(db, 'LOCKOUT', 'auth', 0, [], 'SYSTEM')
             db.commit()
         return jsonify({'error': 'Invalid PIN'}), 401
 
-    _clear_failures(ip)
+    _clear_failures()
     return jsonify({
         'id': operator['id'],
         'name': operator['name'],
