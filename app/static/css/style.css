@@ -1350,7 +1350,7 @@ h2 { color: var(--primary); margin: 20px 0 16px; font-size: 20px; }
 .btn-sm { padding: 4px 12px; font-size: var(--text-sm); }
 .btn-active { background: var(--green); color: var(--white); border-color: var(--green); }
 .btn-inactive { background: var(--border); color: var(--gray); }
-.export-result { margin-top: 16px; padding: 16px; background: var(--success-bg); border-radius: var(--radius-sm); }
+.export-result { margin-top: 16px; padding: 16px; background: var(--success-bg); border-radius: var(--radius-sm); display: flex; flex-direction: column; gap: 8px; }
 .export-error { margin-top: 16px; padding: 16px; background: var(--danger-bg); border-radius: var(--radius-sm); color: var(--danger); }
 
 .config-table { width: 100%; border-collapse: collapse; font-size: 13px; }
