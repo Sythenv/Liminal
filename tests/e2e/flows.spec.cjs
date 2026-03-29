@@ -373,3 +373,172 @@ test.describe('Flow 8: Print', () => {
         await expect(printIcon).toBeVisible();
     });
 });
+
+// =============================================================
+// FLOW 9: Full sequence — create → results → validate → print
+// This is the most important test: catches state bugs between steps
+// =============================================================
+
+test.describe('Flow 9: Full lifecycle', () => {
+    test('create entry, enter results, validate with different user, print', async ({ page }) => {
+        // --- Step 1: Tech creates entry ---
+        await page.goto('/');
+        await unlockFromLanding(page, PIN_TECH);
+        await waitForWorklist(page);
+
+        await page.click('#btnNewEntry');
+        await expect(page.locator('#wizardModal')).toBeVisible();
+
+        const uniqueName = 'LIFECYCLE-' + Date.now();
+        await page.fill('#wPatientName', uniqueName);
+        await page.fill('#wAge', '40');
+        await page.click('.sex-btn[data-sex="M"]');
+        await page.click('.ward-btn[data-ward="IPD"]');
+        await page.click('#btnStep1Next');
+
+        await page.waitForSelector('.test-btn', { timeout: 3000 });
+        await page.click('.test-btn:first-child');
+        await page.click('#btnStep2Next');
+
+        await expect(page.locator('#step3')).toBeVisible({ timeout: 3000 });
+        await page.click('#btnSubmitEntry');
+        await enterPinIfNeeded(page, PIN_TECH);
+
+        await expect(page.locator('#successOverlay')).toBeVisible({ timeout: 5000 });
+        await expect(page.locator('#successOverlay')).toBeHidden({ timeout: 5000 });
+
+        // Verify entry appears
+        const worklistText = await page.locator('#worklistCards').textContent();
+        expect(worklistText).toContain(uniqueName);
+
+        // --- Step 2: Tech enters results ---
+        // Find our card and click it
+        const cards = page.locator('#worklistCards .sample-card');
+        const count = await cards.count();
+        let targetCard = null;
+        for (let i = 0; i < count; i++) {
+            const text = await cards.nth(i).textContent();
+            if (text.includes(uniqueName)) { targetCard = cards.nth(i); break; }
+        }
+        expect(targetCard).not.toBeNull();
+        await targetCard.click();
+
+        await expect(page.locator('#resultModal')).toBeVisible({ timeout: 5000 });
+
+        // Fill results
+        const negBtn = page.locator('.posneg-btn.neg').first();
+        if (await negBtn.count() > 0) await negBtn.click();
+        const numInputs = page.locator('.result-numeric input[type="number"]');
+        for (let i = 0; i < await numInputs.count(); i++) {
+            await numInputs.nth(i).fill('11.5');
+        }
+
+        await page.click('#btnSaveResults');
+        await enterPinIfNeeded(page, PIN_TECH);
+        await expect(page.locator('#successOverlay')).toBeVisible({ timeout: 5000 });
+        await expect(page.locator('#successOverlay')).toBeHidden({ timeout: 5000 });
+
+        // --- Step 3: Supervisor validates (different PIN = four-eyes) ---
+        // Logout tech
+        await page.click('#btnLogout');
+        await page.waitForTimeout(500);
+
+        // Login as supervisor
+        await unlockFromLanding(page, PIN_SUP);
+        await waitForWorklist(page);
+
+        // Find the entry in REVIEW — click Show all first to be safe
+        await page.click('#wlToggleHeader');
+        await page.waitForTimeout(500);
+
+        const allCards = page.locator('#worklistCards .sample-card');
+        const allCount = await allCards.count();
+        let reviewCard = null;
+        for (let i = 0; i < allCount; i++) {
+            const text = await allCards.nth(i).textContent();
+            if (text.includes(uniqueName)) { reviewCard = allCards.nth(i); break; }
+        }
+        expect(reviewCard).not.toBeNull();
+        await reviewCard.click();
+
+        await expect(page.locator('#resultModal')).toBeVisible({ timeout: 5000 });
+
+        // Should have validate button (REVIEW status)
+        const validateBtn = page.locator('.validate-btn');
+        await expect(validateBtn).toBeVisible({ timeout: 3000 });
+        await validateBtn.click();
+        await enterPinIfNeeded(page, PIN_SUP);
+
+        // Should succeed (different operator than who entered results)
+        await expect(page.locator('#successOverlay')).toBeVisible({ timeout: 5000 });
+        await expect(page.locator('#successOverlay')).toBeHidden({ timeout: 5000 });
+
+        // --- Step 4: Entry is now COMPLETED — verify print icon ---
+        await page.waitForTimeout(500);
+
+        // Find completed card
+        const finalCards = page.locator('#worklistCards .sample-card');
+        const finalCount = await finalCards.count();
+        let completedCard = null;
+        for (let i = 0; i < finalCount; i++) {
+            const text = await finalCards.nth(i).textContent();
+            if (text.includes(uniqueName)) { completedCard = finalCards.nth(i); break; }
+        }
+        expect(completedCard).not.toBeNull();
+
+        // Should have print icon
+        const printIcon = completedCard.locator('.card-print-icon');
+        await expect(printIcon).toBeVisible();
+
+        // --- Step 5: Click card again — modal should still open (no state corruption) ---
+        await completedCard.click();
+        await expect(page.locator('#resultModal')).toBeVisible({ timeout: 5000 });
+
+        // Should show Print button in modal (COMPLETED)
+        await expect(page.locator('#btnPrintFromModal')).toBeVisible();
+    });
+});
+
+// =============================================================
+// FLOW 10: State transitions — open different status cards sequentially
+// =============================================================
+
+test.describe('Flow 10: Sequential card opens (regression test)', () => {
+    test('open REVIEW then REGISTERED — both modals work', async ({ page }) => {
+        await page.goto('/');
+        await unlockFromLanding(page, PIN_ADMIN);
+        await waitForWorklist(page);
+
+        // Show all
+        await page.click('#wlToggleHeader');
+        await page.waitForTimeout(500);
+
+        // Find a REVIEW card
+        const reviewCard = page.locator('.sample-card.status-review').first();
+        if (await reviewCard.count() === 0) { test.skip(); return; }
+
+        // Open REVIEW
+        await reviewCard.click();
+        await expect(page.locator('#resultModal')).toBeVisible({ timeout: 5000 });
+
+        // Should have validate button
+        await expect(page.locator('.validate-btn')).toBeVisible();
+
+        // Close modal
+        await page.click('#btnCloseResult');
+        await expect(page.locator('#resultModal')).toBeHidden({ timeout: 3000 });
+
+        // Now open a REGISTERED card
+        const regCard = page.locator('.sample-card.status-registered').first();
+        if (await regCard.count() === 0) { test.skip(); return; }
+
+        await regCard.click();
+        await expect(page.locator('#resultModal')).toBeVisible({ timeout: 5000 });
+
+        // Should have Save Results button (not validate)
+        await expect(page.locator('#btnSaveResults')).toBeVisible();
+
+        // Should have Reject button (recreated after REVIEW destroyed it)
+        await expect(page.locator('#btnStartReject')).toBeVisible();
+    });
+});
