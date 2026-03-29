@@ -91,6 +91,23 @@ def seed_data(app):
              app.config['COUNTRY'], app.config['DEFAULT_LANGUAGE'],
              app.config['SITE_CODE'] + '-'))
 
+    # Seed demo operators if LIMINAL_DEMO is set
+    if os.environ.get('LIMINAL_DEMO'):
+        op_count = db.execute('SELECT COUNT(*) as c FROM operator').fetchone()['c']
+        if op_count == 0:
+            from app.auth import generate_salt, hash_pin
+            demo_ops = [
+                ('Admin (demo)', '0777', 3),
+                ('Supervisor (demo)', '0755', 2),
+                ('Technician (demo)', '0644', 1),
+            ]
+            for name, pin, level in demo_ops:
+                salt = generate_salt()
+                pin_h = hash_pin(pin, salt)
+                db.execute('INSERT INTO operator (name, pin_hash, pin_salt, level) VALUES (?, ?, ?, ?)',
+                           (name, pin_h, salt, level))
+            print('  Seeded 3 demo operators (LIMINAL_DEMO=1)')
+
     db.commit()
     db.close()
     print(f'  Seeded {len(tests)} test definitions')
