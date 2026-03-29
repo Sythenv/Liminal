@@ -980,9 +980,7 @@ function applyNavUnlock() {
             link.classList.add('unlocked');
         }
     });
-    if (btn) {
-        btn.style.display = 'none';
-    }
+    // navUnlockBtn removed from DOM — unlock handled by landing page cadenas
     document.dispatchEvent(new CustomEvent('navUnlocked', { detail: { level: currentLevel } }));
 }
 
@@ -994,19 +992,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', () => pinKeyPress(btn.dataset.key));
     });
 
-    // Wire nav unlock button
-    const unlockBtn = document.getElementById('navUnlockBtn');
-    if (unlockBtn) {
-        unlockBtn.addEventListener('click', () => {
-            // If already unlocked and not on register page, navigate there
-            const cached = getSessionPin();
-            if (cached && currentLevel > 0 && !document.getElementById('landingMode')) {
-                window.location.href = '/register';
-                return;
-            }
-            unlockNav();
-        });
-    }
+    // Nav unlock button removed — unlock via landing page cadenas only
 
     // Auto-unlock nav if session is still valid (works on all pages)
     const cached = getSessionPin();
