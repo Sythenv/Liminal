@@ -2061,6 +2061,13 @@ h2 { color: var(--primary); margin: 20px 0 16px; font-size: 20px; }
     letter-spacing: 2px;
 }
 .pin-key-ok:hover { background: #444; box-shadow: 0 3px 12px rgba(0,0,0,0.15); }
+.pin-demo-hint {
+    margin-top: 16px;
+    font-size: 11px;
+    color: #aaa;
+    text-align: center;
+    letter-spacing: 0.3px;
+}
 .pin-key-ok:active { transform: scale(0.98); }
 /* Donor card */
 .donor-card { padding: 12px 14px; }
