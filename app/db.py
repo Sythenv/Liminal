@@ -102,11 +102,70 @@ def seed_data(app):
                 ('Technician (demo)', '0644', 1),
             ]
             for name, pin, level in demo_ops:
+
                 salt = generate_salt()
                 pin_h = hash_pin(pin, salt)
                 db.execute('INSERT INTO operator (name, pin_hash, pin_salt, level) VALUES (?, ?, ?, ?)',
                            (name, pin_h, salt, level))
             print('  Seeded 3 demo operators (LIMINAL_DEMO=1)')
+
+        # Seed demo patients + samples
+        pat_count = db.execute('SELECT COUNT(*) as c FROM patient').fetchone()['c']
+        if pat_count == 0:
+            from datetime import datetime, timedelta
+            today = datetime.now().strftime('%Y-%m-%d')
+            now_time = datetime.now().strftime('%H:%M')
+            demo_patients = [
+                ('P-0001', 'Jean Mukiza', 35, 'Y', 'M', 'Bukavu', '+243 991 234'),
+                ('P-0002', 'Amina Diallo', 28, 'Y', 'F', 'Goma', '+243 812 567'),
+                ('P-0003', 'Pierre Habimana', 42, 'Y', 'M', 'Uvira', None),
+                ('P-0004', 'Fatou Keita', 8, 'Y', 'F', 'Kalemie', '+243 975 890'),
+                ('P-0005', 'Joseph Ndayisaba', 55, 'Y', 'M', 'Bukavu', None),
+                ('P-0006', 'Grace Akello', 22, 'Y', 'F', 'Goma', '+243 898 123'),
+                ('P-0007', 'Ibrahim Sow', 3, 'M', 'M', 'Uvira', None),
+                ('P-0008', 'Rose Ingabire', 67, 'Y', 'F', 'Bukavu', '+243 845 456'),
+            ]
+            for pnum, name, age, age_unit, sex, village, contact in demo_patients:
+                db.execute('''INSERT INTO patient (patient_number, name, age, age_unit, sex, village, contact)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)''', (pnum, name, age, age_unit, sex, village, contact))
+
+            # Seed some lab entries linked to patients
+            prefix = db.execute('SELECT lab_number_prefix FROM site_config WHERE id = 1').fetchone()
+            lab_prefix = prefix['lab_number_prefix'] if prefix else 'LAB-'
+            year = datetime.now().strftime('%Y')
+            demo_entries = [
+                (1, 'Jean Mukiza', 35, 'Y', 'M', 'OPD', 'Blood', 'REGISTERED'),
+                (2, 'Amina Diallo', 28, 'Y', 'F', 'IPD', 'Blood', 'IN_PROGRESS'),
+                (3, 'Pierre Habimana', 42, 'Y', 'M', 'ER', 'Urine', 'REVIEW'),
+                (4, 'Fatou Keita', 8, 'Y', 'F', 'PED', 'Blood', 'REGISTERED'),
+                (5, 'Joseph Ndayisaba', 55, 'Y', 'M', 'IPD', 'Blood', 'COMPLETED'),
+                (6, 'Grace Akello', 22, 'Y', 'F', 'MATER', 'Blood', 'REGISTERED'),
+            ]
+            for pat_fk, pname, age, age_unit, sex, ward, specimen, status in demo_entries:
+                seq = db.execute('SELECT lab_number_sequence FROM site_config WHERE id = 1').fetchone()['lab_number_sequence'] + 1
+                lab_num = f'{lab_prefix}{year}-{seq:04d}'
+                db.execute('UPDATE site_config SET lab_number_sequence = ? WHERE id = 1', (seq,))
+                db.execute('''INSERT INTO lab_register
+                    (lab_number, patient_name, age, age_unit, sex, ward, specimen_type, status,
+                     reception_date, reception_time, patient_fk)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                    (lab_num, pname, age, age_unit, sex, ward, specimen, status, today, now_time, pat_fk))
+
+                # Add test requests for each entry
+                entry_id = db.execute('SELECT last_insert_rowid()').fetchone()[0]
+                test_codes = ['MAL_RDT', 'HB'] if specimen == 'Blood' else ['URINE']
+                for code in test_codes:
+                    test = db.execute('SELECT id FROM test_definition WHERE code = ?', (code,)).fetchone()
+                    if test:
+                        db.execute('INSERT INTO lab_result (register_id, test_id, requested) VALUES (?, ?, 1)',
+                                   (entry_id, test['id']))
+                        # Add results for IN_PROGRESS, REVIEW, COMPLETED entries
+                        if status in ('IN_PROGRESS', 'REVIEW', 'COMPLETED'):
+                            val = 'NEG' if code == 'MAL_RDT' else '12.5' if code == 'HB' else 'Normal'
+                            db.execute('UPDATE lab_result SET result_value = ? WHERE register_id = ? AND test_id = ?',
+                                       (val, entry_id, test['id']))
+
+            print(f'  Seeded {len(demo_patients)} demo patients + {len(demo_entries)} samples')
 
     db.commit()
     db.close()
