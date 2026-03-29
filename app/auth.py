@@ -6,6 +6,7 @@ How it works:
 - If the route requires a level, the middleware enforces it
 - Endpoints read g.operator without caring about auth logic
 - Four-eyes rule is enforced in the validate endpoint via audit_log check
+- Rate limiting: 5 failed attempts → 60s lockout per IP
 
 No decorators on endpoints. No auth imports in API modules (except get_current_operator_name).
 """
@@ -13,10 +14,17 @@ No decorators on endpoints. No auth imports in API modules (except get_current_o
 import os
 import re
 import hashlib
+import time
 
 # PINs blocked: duress patterns + common weak sequences
 WEAK_PINS = {'0000','1111','2222','3333','4444','5555','6666','7777','8888','9999',
              '1234','4321','0123','1230','9876','6789'}
+
+# Rate limiting: track failed PIN attempts per IP
+RATE_LIMIT_MAX = 5       # max failures before lockout
+RATE_LIMIT_WINDOW = 60   # lockout duration in seconds
+_failed_attempts = {}     # {ip: {'count': int, 'first_fail': float, 'locked_until': float}}
+
 from flask import Blueprint, request, jsonify, g
 from app.db import get_db
 
@@ -149,6 +157,41 @@ def get_current_operator_name():
     return op['name'] if op else 'SYSTEM'
 
 
+# ===== RATE LIMITING =====
+
+def _check_rate_limit(ip):
+    """Returns seconds remaining in lockout, or 0 if OK."""
+    entry = _failed_attempts.get(ip)
+    if not entry:
+        return 0
+    if entry.get('locked_until', 0) > time.time():
+        return int(entry['locked_until'] - time.time())
+    # Reset if window expired
+    if time.time() - entry.get('first_fail', 0) > RATE_LIMIT_WINDOW:
+        _failed_attempts.pop(ip, None)
+        return 0
+    return 0
+
+
+def _record_failure(ip):
+    """Record a failed attempt. Returns True if now locked out."""
+    now = time.time()
+    entry = _failed_attempts.get(ip)
+    if not entry or now - entry.get('first_fail', 0) > RATE_LIMIT_WINDOW:
+        _failed_attempts[ip] = {'count': 1, 'first_fail': now, 'locked_until': 0}
+        return False
+    entry['count'] += 1
+    if entry['count'] >= RATE_LIMIT_MAX:
+        entry['locked_until'] = now + RATE_LIMIT_WINDOW
+        return True
+    return False
+
+
+def _clear_failures(ip):
+    """Clear failures on successful auth."""
+    _failed_attempts.pop(ip, None)
+
+
 # ===== MIDDLEWARE =====
 
 def auth_middleware():
@@ -184,9 +227,22 @@ def auth_middleware():
     if not pin:
         return jsonify({'error': 'Authentication required', 'required_level': required_level}), 401
 
+    # Rate limit check
+    ip = request.remote_addr or '127.0.0.1'
+    lockout = _check_rate_limit(ip)
+    if lockout > 0:
+        return jsonify({'error': f'Too many failed attempts. Retry in {lockout}s', 'locked': True}), 429
+
     operator = get_operator_by_pin(db, pin)
     if not operator:
+        locked = _record_failure(ip)
+        if locked:
+            from app.audit import log_action
+            log_action(db, 'LOCKOUT', 'auth', 0, [('ip', None, ip)], 'SYSTEM')
+            db.commit()
         return jsonify({'error': 'Invalid PIN'}), 401
+
+    _clear_failures(ip)
 
     if operator['level'] < required_level:
         return jsonify({'error': f'Level {required_level} required, you are level {operator["level"]}'}), 403
@@ -251,14 +307,25 @@ def setup():
 @bp.route('/verify', methods=['POST'])
 def verify():
     """Verify a PIN and return operator info."""
+    ip = request.remote_addr or '127.0.0.1'
+    lockout = _check_rate_limit(ip)
+    if lockout > 0:
+        return jsonify({'error': f'Too many failed attempts. Retry in {lockout}s', 'locked': True}), 429
+
     data = request.get_json()
     pin = str(data.get('pin', ''))
 
     db = get_db()
     operator = get_operator_by_pin(db, pin)
     if not operator:
+        locked = _record_failure(ip)
+        if locked:
+            from app.audit import log_action
+            log_action(db, 'LOCKOUT', 'auth', 0, [('ip', None, ip)], 'SYSTEM')
+            db.commit()
         return jsonify({'error': 'Invalid PIN'}), 401
 
+    _clear_failures(ip)
     return jsonify({
         'id': operator['id'],
         'name': operator['name'],

@@ -163,6 +163,36 @@ function getSessionPin() {
     return null;
 }
 
+// ===== INACTIVITY LOCK =====
+// Lock screen after 5 minutes of no interaction (clicks, keys, touches)
+
+let _idleTimer = null;
+const IDLE_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+
+function _resetIdleTimer() {
+    if (_idleTimer) clearTimeout(_idleTimer);
+    _idleTimer = setTimeout(_lockOnIdle, IDLE_TIMEOUT);
+}
+
+function _lockOnIdle() {
+    if (!sessionPin) return; // already locked
+    sessionPin = null;
+    sessionLevel = 0;
+    sessionExpiry = 0;
+    currentPin = null;
+    currentLevel = 0;
+    currentOperatorName = null;
+    sessionStorage.removeItem('liminal_session');
+    // Reload to reset UI state (landing mode, locked nav)
+    location.reload();
+}
+
+// Start idle tracking
+['click', 'keydown', 'touchstart', 'mousemove'].forEach(evt => {
+    document.addEventListener(evt, _resetIdleTimer, { passive: true });
+});
+_resetIdleTimer();
+
 // ===== AUTH FETCH WRAPPER =====
 
 function authFetch(url, options) {
