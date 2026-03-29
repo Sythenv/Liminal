@@ -868,6 +868,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('navUnlocked', e => {
         if (e.detail.level >= 1) enterWorklist(e.detail.level);
     });
+
+    // Auto-enter worklist if already unlocked (returning from another page)
+    if (typeof currentLevel !== 'undefined' && currentLevel >= 1 && typeof getSessionPin === 'function' && getSessionPin()) {
+        enterWorklist(currentLevel);
+        applyNavUnlock();
+    }
 });
 
 // ===== DATE NAVIGATION =====
