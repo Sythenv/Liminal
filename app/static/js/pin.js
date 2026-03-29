@@ -984,9 +984,11 @@ function applyNavUnlock() {
             link.classList.add('unlocked');
         }
     });
-    // Show operator name in header
+    // Show operator name + logout button in header
     const opEl = document.getElementById('headerOperator');
     if (opEl && currentOperatorName) opEl.textContent = currentOperatorName;
+    const logoutBtn = document.getElementById('btnLogout');
+    if (logoutBtn) logoutBtn.style.display = '';
     document.dispatchEvent(new CustomEvent('navUnlocked', { detail: { level: currentLevel } }));
 }
 
@@ -998,7 +1000,20 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', () => pinKeyPress(btn.dataset.key));
     });
 
-    // Nav unlock button removed — unlock via landing page cadenas only
+    // Logout button
+    const logoutBtn = document.getElementById('btnLogout');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            sessionPin = null;
+            sessionLevel = 0;
+            sessionExpiry = 0;
+            currentPin = null;
+            currentLevel = 0;
+            currentOperatorName = null;
+            sessionStorage.removeItem('liminal_session');
+            location.href = '/register';
+        });
+    }
 
     // Auto-unlock nav if session is still valid (works on all pages)
     const cached = getSessionPin();
