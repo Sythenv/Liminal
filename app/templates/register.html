@@ -10,7 +10,7 @@
     <div id="landingPitch" class="landing-pitch">
         <div class="pitch-hero">
             <img src="/static/img/logo.svg" alt="" class="landing-logo">
-            <p class="pitch-tagline">Laboratory Information at the Threshold</p>
+            <p class="pitch-tagline" data-i18n="land_tagline">Laboratory Information at the Threshold</p>
             <div class="pitch-rule"></div>
         </div>
     </div>
@@ -19,7 +19,7 @@
     <div class="landing-action">
         <div class="landing-input-group">
             <input type="text" id="labNumberInput" class="landing-input"
-                   placeholder="Lab number, name or DOB (dd/mm/yyyy)" autocomplete="off" autofocus>
+                   placeholder="Lab number, name or DOB (dd/mm/yyyy)" data-i18n-placeholder="pat_search" autocomplete="off" autofocus>
             <button id="btnLookup" class="landing-lookup-btn">?</button>
         </div>
         <div id="lookupError" class="lookup-error" style="display:none"></div>
@@ -29,66 +29,66 @@
     <!-- EDITORIAL — features -->
     <div id="landingFeatures" class="landing-pitch" style="display:none">
         <div class="pitch-section">
-            <h3 class="pitch-section-title">Featuring</h3>
+            <h3 class="pitch-section-title" data-i18n="land_featuring">Featuring</h3>
             <div class="pitch-columns">
                 <div class="pitch-col">
-                    <h4>Laboratory</h4>
+                    <h4 data-i18n="land_laboratory">Laboratory</h4>
                     <ul>
-                        <li>Structured result entry — CBC, malaria, urinalysis</li>
-                        <li>Patient history and trend tracking</li>
-                        <li>Panic value alerts on critical results</li>
+                        <li data-i18n="land_lab_1">Structured result entry — CBC, malaria, urinalysis</li>
+                        <li data-i18n="land_lab_2">Patient history and trend tracking</li>
+                        <li data-i18n="land_lab_3">Panic value alerts on critical results</li>
                     </ul>
                 </div>
                 <div class="pitch-col">
-                    <h4>Blood Bank</h4>
+                    <h4 data-i18n="land_blood_bank">Blood Bank</h4>
                     <ul>
-                        <li>Donor register, stock and expiry tracking</li>
-                        <li>Crossmatch and transfusion workflow</li>
+                        <li data-i18n="land_bb_1">Donor register, stock and expiry tracking</li>
+                        <li data-i18n="land_bb_2">Crossmatch and transfusion workflow</li>
                     </ul>
                 </div>
                 <div class="pitch-col">
-                    <h4>Quality</h4>
+                    <h4 data-i18n="land_quality">Quality</h4>
                     <ul>
-                        <li>Sample rejection workflow — 9 constrained reasons</li>
-                        <li>Four-eyes validation — operator ≠ validator</li>
-                        <li>ISO 15189 compliant audit trail</li>
+                        <li data-i18n="land_q_1">Sample rejection workflow — 9 constrained reasons</li>
+                        <li data-i18n="land_q_2">Four-eyes validation — operator ≠ validator</li>
+                        <li data-i18n="land_q_3">ISO 15189 compliant audit trail</li>
                     </ul>
                 </div>
                 <div class="pitch-col">
-                    <h4>Security</h4>
+                    <h4 data-i18n="land_security">Security</h4>
                     <ul>
-                        <li>Zero-trust PIN per action — no sessions</li>
-                        <li>AES-256 encryption, SHA-256 integrity</li>
-                        <li>Tamper-proof record hashing</li>
+                        <li data-i18n="land_s_1">Zero-trust PIN per action — no sessions</li>
+                        <li data-i18n="land_s_2">AES-256 encryption, SHA-256 integrity</li>
+                        <li data-i18n="land_s_3">Tamper-proof record hashing</li>
                     </ul>
                 </div>
                 <div class="pitch-col">
-                    <h4>Reporting</h4>
+                    <h4 data-i18n="land_reporting">Reporting</h4>
                     <ul>
-                        <li>Monthly sitrep — volumes, positivity rates</li>
-                        <li>Excel / CSV export</li>
+                        <li data-i18n="land_r_1">Monthly sitrep — volumes, positivity rates</li>
+                        <li data-i18n="land_r_2">Excel / CSV export</li>
                     </ul>
                 </div>
                 <div class="pitch-col">
-                    <h4>Equipment</h4>
+                    <h4 data-i18n="land_equipment">Equipment</h4>
                     <ul>
-                        <li>Maintenance log — WHO LQSI categories</li>
-                        <li>Preventive, corrective, calibration tracking</li>
+                        <li data-i18n="land_e_1">Maintenance log — WHO LQSI categories</li>
+                        <li data-i18n="land_e_2">Preventive, corrective, calibration tracking</li>
                     </ul>
                 </div>
                 <div class="pitch-col">
-                    <h4>Localization</h4>
+                    <h4 data-i18n="land_localization">Localization</h4>
                     <ul>
-                        <li>Multilingual — English, French, Arabic</li>
-                        <li>RTL support</li>
+                        <li data-i18n="land_l_1">Multilingual — English, French, Arabic</li>
+                        <li data-i18n="land_l_2">RTL support</li>
                     </ul>
                 </div>
                 <div class="pitch-col">
-                    <h4>Field-ready</h4>
+                    <h4 data-i18n="land_field">Field-ready</h4>
                     <ul>
-                        <li>Air-gapped — zero network dependency</li>
-                        <li>Portable — USB stick, no install</li>
-                        <li>Barcode scanner ready — Code 128 HID</li>
+                        <li data-i18n="land_f_1">Air-gapped — zero network dependency</li>
+                        <li data-i18n="land_f_2">Portable — USB stick, no install</li>
+                        <li data-i18n="land_f_3">Barcode scanner ready — Code 128 HID</li>
                     </ul>
                 </div>
             </div>
@@ -206,9 +206,9 @@
                     </div>
                 </div>
                 <div class="big-field">
-                    <label>Collection Time</label>
+                    <label data-i18n="collection_time">Collection Time</label>
                     <div class="collection-time-row">
-                        <button type="button" class="now-btn" id="btnCollectionNow">NOW</button>
+                        <button type="button" class="now-btn" id="btnCollectionNow" data-i18n="now">NOW</button>
                         <input type="time" id="wCollectionTime" class="big-input collection-time-input">
                     </div>
                 </div>
@@ -270,7 +270,7 @@
             <button id="btnSaveResults" class="wiz-btn wiz-btn-confirm" data-i18n="save_results">Save Results</button>
         </div>
         <div class="wizard-footer reject-footer" id="rejectFooter" style="display:none">
-            <button id="btnStartReject" class="wiz-btn reject-btn">Reject Sample</button>
+            <button id="btnStartReject" class="wiz-btn reject-btn" data-i18n="reject_sample">Reject Sample</button>
         </div>
     </div>
 </div>
@@ -279,18 +279,18 @@
 <div id="panicModal" class="wizard-overlay" style="display:none">
     <div class="wizard-container panic-confirm-container">
         <div class="wizard-header">
-            <h2>Critical Values Detected</h2>
+            <h2 data-i18n="reg_critical_detected">Critical Values Detected</h2>
         </div>
         <div class="wizard-body">
             <div id="panicList" class="panic-list"></div>
             <label class="panic-checkbox">
                 <input type="checkbox" id="panicCheckbox">
-                <span>I have verified these critical values</span>
+                <span data-i18n="reg_verified_critical">I have verified these critical values</span>
             </label>
         </div>
         <div class="wizard-footer">
-            <button id="panicCancel" class="wiz-btn wiz-btn-cancel">Go Back</button>
-            <button id="panicConfirm" class="wiz-btn wiz-btn-panic-confirm" disabled>Confirm & Save</button>
+            <button id="panicCancel" class="wiz-btn wiz-btn-cancel" data-i18n="reg_go_back">Go Back</button>
+            <button id="panicConfirm" class="wiz-btn wiz-btn-panic-confirm" data-i18n="reg_confirm_save" disabled>Confirm & Save</button>
         </div>
     </div>
 </div>

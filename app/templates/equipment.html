@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h2>Equipment Register</h2>
+<h2 data-i18n="nav_equipment">Equipment Register</h2>
 
 <div class="card-list" id="equipList"></div>
 <div id="equipEmpty" class="empty-state" style="display:none">
-    <p>No equipment registered</p>
+    <p data-i18n="eq_no_equipment">No equipment registered</p>
 </div>
 
 <!-- Maintenance section (shown when equipment selected) -->
@@ -13,7 +13,7 @@
     <h2 id="maintTitle"></h2>
     <div class="card-list" id="maintList"></div>
     <div id="maintEmpty" class="empty-state" style="display:none">
-        <p>No maintenance records</p>
+        <p data-i18n="eq_no_maintenance">No maintenance records</p>
     </div>
 </div>
 

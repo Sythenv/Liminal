@@ -14,13 +14,13 @@ function loadBackups() {
         resp.json().then(function (data) {
             var list = document.getElementById('backupList');
             if (!data.backups || data.backups.length === 0) {
-                list.innerHTML = '<em>No backups yet.</em>';
+                list.innerHTML = '<em>' + t('set_no_backups') + '</em>';
                 return;
             }
             var html = '<table style="width:100%; font-size:0.9rem"><thead><tr>' +
-                '<th style="text-align:left">File</th>' +
-                '<th style="text-align:left">Size</th>' +
-                '<th style="text-align:left">Date</th>' +
+                '<th style="text-align:left">' + t('set_file') + '</th>' +
+                '<th style="text-align:left">' + t('set_size') + '</th>' +
+                '<th style="text-align:left">' + t('set_date') + '</th>' +
                 '<th></th></tr></thead><tbody>';
             data.backups.forEach(function (b) {
                 var sizeKB = (b.size / 1024).toFixed(1);
@@ -29,7 +29,7 @@ function loadBackups() {
                     '<td>' + b.filename + '</td>' +
                     '<td>' + sizeKB + ' KB</td>' +
                     '<td>' + date + '</td>' +
-                    '<td><a href="/api/backup/' + encodeURIComponent(b.filename) + '" class="wiz-btn" style="font-size:0.8rem">Download</a></td>' +
+                    '<td><a href="/api/backup/' + encodeURIComponent(b.filename) + '" class="wiz-btn" style="font-size:0.8rem">' + t('download') + '</a></td>' +
                     '</tr>';
             });
             html += '</tbody></table>';
@@ -59,17 +59,17 @@ function createBackup() {
 function restoreBackup() {
     var fileInput = document.getElementById('restoreFile');
     if (!fileInput.files || fileInput.files.length === 0) {
-        showModal({ title: 'Error', message: 'Please select a .db file first.', type: 'warning' });
+        showModal({ title: t('error'), message: t('set_select_db'), type: 'warning' });
         return;
     }
 
     showModal({
-        title: 'Restore database?',
-        message: 'This will <b>replace all current data</b> with the backup file. This cannot be undone.',
+        title: t('set_restore_title'),
+        message: t('set_restore_msg'),
         type: 'danger',
         actions: [
-            { label: 'Cancel', cls: 'cancel' },
-            { label: 'Restore', cls: 'danger', callback: function() { doRestore(fileInput.files[0]); } }
+            { label: t('cancel'), cls: 'cancel' },
+            { label: t('set_restore'), cls: 'danger', callback: function() { doRestore(fileInput.files[0]); } }
         ]
     });
 }
@@ -88,7 +88,7 @@ function doRestore(file) {
             if (data.ok) {
                 resultDiv.innerHTML = '<span style="color:var(--sig-ok)">' + data.message + '</span>';
             } else {
-                resultDiv.innerHTML = '<span style="color:var(--sig-alert)">' + (data.error || 'Restore failed') + '</span>';
+                resultDiv.innerHTML = '<span style="color:var(--sig-alert)">' + (data.error || t('set_restore_failed')) + '</span>';
             }
             resultDiv.style.display = 'block';
         });

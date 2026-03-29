@@ -74,7 +74,7 @@ function loadDonors() {
             meta.className = 'donor-meta';
             const parts = [d.donor_number];
             if (d.age) parts.push(d.age + (d.sex ? d.sex : ''));
-            if (d.last_donation_date) parts.push('Last ' + d.last_donation_date);
+            if (d.last_donation_date) parts.push(t('bb_last') + ' ' + d.last_donation_date);
             meta.textContent = parts.join(' \u00b7 ');
             info.appendChild(meta);
 
@@ -96,12 +96,12 @@ function loadDonors() {
 function openAddDonor() {
     const body = document.getElementById('bbModalBody');
     const footer = document.getElementById('bbModalFooter');
-    document.getElementById('bbModalTitle').textContent = 'New Donor';
+    document.getElementById('bbModalTitle').textContent = t('new_donor');
     body.innerHTML = '';
 
     const fields = [
-        { id: 'dName', label: 'Name', type: 'text' },
-        { id: 'dAge', label: 'Age', type: 'number' },
+        { id: 'dName', label: t('name'), type: 'text' },
+        { id: 'dAge', label: t('age'), type: 'number' },
     ];
     fields.forEach(f => {
         const div = document.createElement('div');
@@ -121,7 +121,7 @@ function openAddDonor() {
     const sexDiv = document.createElement('div');
     sexDiv.className = 'big-field';
     const sexLbl = document.createElement('label');
-    sexLbl.textContent = 'Sex';
+    sexLbl.textContent = t('sex');
     sexDiv.appendChild(sexLbl);
     const sexBtns = document.createElement('div');
     sexBtns.className = 'sex-btns';
@@ -144,7 +144,7 @@ function openAddDonor() {
     const bgDiv = document.createElement('div');
     bgDiv.className = 'big-field';
     const bgLbl = document.createElement('label');
-    bgLbl.textContent = 'Blood Group';
+    bgLbl.textContent = t('blood_group');
     bgDiv.appendChild(bgLbl);
     const bgBtns = document.createElement('div');
     bgBtns.className = 'bg-btns';
@@ -167,7 +167,7 @@ function openAddDonor() {
     const cDiv = document.createElement('div');
     cDiv.className = 'big-field';
     const cLbl = document.createElement('label');
-    cLbl.textContent = 'Contact';
+    cLbl.textContent = t('contact');
     const cInp = document.createElement('input');
     cInp.type = 'text';
     cInp.id = 'dContact';
@@ -179,11 +179,11 @@ function openAddDonor() {
     footer.innerHTML = '';
     const cancelBtn = document.createElement('button');
     cancelBtn.className = 'wiz-btn wiz-btn-cancel';
-    cancelBtn.textContent = 'Cancel';
+    cancelBtn.textContent = t('cancel');
     cancelBtn.addEventListener('click', closeModal);
     const saveBtn = document.createElement('button');
     saveBtn.className = 'wiz-btn wiz-btn-confirm';
-    saveBtn.textContent = 'Register Donor';
+    saveBtn.textContent = t('register_donor');
     saveBtn.addEventListener('click', saveDonor);
     footer.appendChild(cancelBtn);
     footer.appendChild(saveBtn);
@@ -238,7 +238,7 @@ function buildStockSummary(units) {
     // Header
     const thead = document.createElement('thead');
     const hRow = document.createElement('tr');
-    ['', 'AVAIL', 'RSRVD', 'ISSUED', 'EXPRD', 'EXP<7d'].forEach(h => {
+    ['', t('bb_avail'), t('bb_rsrvd'), t('bb_issued_col'), t('bb_exprd'), t('bb_exp_7d')].forEach(h => {
         const th = document.createElement('th');
         th.textContent = h;
         hRow.appendChild(th);
@@ -293,8 +293,8 @@ function loadUnits() {
 
         units.forEach(u => {
             const parts = [u.volume_ml + 'ml'];
-            if (u.donor_name) parts.push('Donor: ' + u.donor_number || u.donor_name);
-            parts.push('Exp: ' + u.expiry_date);
+            if (u.donor_name) parts.push(t('bb_donor') + ': ' + u.donor_number || u.donor_name);
+            parts.push(t('bb_exp') + ': ' + u.expiry_date);
 
             // Build extra elements
             const extra = [];
@@ -305,7 +305,7 @@ function loadUnits() {
             if (u.status === 'AVAILABLE' && daysLeft <= 7 && daysLeft > 0) {
                 const warn = document.createElement('div');
                 warn.className = 'rejection-badge u-mt-6';
-                warn.textContent = daysLeft + 'd left';
+                warn.textContent = daysLeft + t('bb_days_left');
                 extra.push(warn);
             }
 
@@ -336,19 +336,19 @@ function loadUnits() {
 function openNewCollection() {
     const body = document.getElementById('bbModalBody');
     const footer = document.getElementById('bbModalFooter');
-    document.getElementById('bbModalTitle').textContent = 'New Collection';
+    document.getElementById('bbModalTitle').textContent = t('new_collection');
     body.innerHTML = '';
 
     // Donor search
     const dDiv = document.createElement('div');
     dDiv.className = 'big-field';
     const dLbl = document.createElement('label');
-    dLbl.textContent = 'Donor (search)';
+    dLbl.textContent = t('bb_donor_search');
     const dInp = document.createElement('input');
     dInp.type = 'text';
     dInp.id = 'uDonorSearch';
     dInp.className = 'big-input';
-    dInp.placeholder = 'Type donor name...';
+    dInp.placeholder = t('bb_type_donor_name');
     const dSugg = document.createElement('div');
     dSugg.className = 'suggestions';
     dSugg.id = 'uDonorSuggestions';
@@ -396,7 +396,7 @@ function openNewCollection() {
     const bgDiv = document.createElement('div');
     bgDiv.className = 'big-field';
     const bgLbl = document.createElement('label');
-    bgLbl.textContent = 'Blood Group';
+    bgLbl.textContent = t('blood_group');
     bgDiv.appendChild(bgLbl);
     const bgBtns = document.createElement('div');
     bgBtns.className = 'bg-btns';
@@ -419,7 +419,7 @@ function openNewCollection() {
     const vDiv = document.createElement('div');
     vDiv.className = 'big-field';
     const vLbl = document.createElement('label');
-    vLbl.textContent = 'Volume (ml)';
+    vLbl.textContent = t('volume_ml');
     const vInp = document.createElement('input');
     vInp.type = 'number';
     vInp.id = 'uVolume';
@@ -434,7 +434,7 @@ function openNewCollection() {
         const sDiv = document.createElement('div');
         sDiv.className = 'big-field';
         const sLbl = document.createElement('label');
-        sLbl.textContent = s + ' Screening';
+        sLbl.textContent = s + ' ' + t('bb_screening_label');
         sDiv.appendChild(sLbl);
         const sBtns = document.createElement('div');
         sBtns.className = 'posneg-btns';
@@ -458,11 +458,11 @@ function openNewCollection() {
     footer.innerHTML = '';
     const cancelBtn = document.createElement('button');
     cancelBtn.className = 'wiz-btn wiz-btn-cancel';
-    cancelBtn.textContent = 'Cancel';
+    cancelBtn.textContent = t('cancel');
     cancelBtn.addEventListener('click', closeModal);
     const saveBtn = document.createElement('button');
     saveBtn.className = 'wiz-btn wiz-btn-confirm';
-    saveBtn.textContent = 'Register Unit';
+    saveBtn.textContent = t('register_unit');
     saveBtn.addEventListener('click', () => {
         const bgActive = body.querySelector('.bg-btn.active');
         const screenings = {};
@@ -509,7 +509,7 @@ function loadTransfusions() {
             if (tr.adverse_reaction) {
                 const badge = document.createElement('span');
                 badge.className = 'rejection-badge';
-                badge.textContent = 'ADVERSE REACTION';
+                badge.textContent = t('adverse_reaction_badge');
                 extra.push(badge);
             }
 
@@ -532,7 +532,7 @@ function loadTransfusions() {
 function openIssueUnit() {
     const body = document.getElementById('bbModalBody');
     const footer = document.getElementById('bbModalFooter');
-    document.getElementById('bbModalTitle').textContent = 'Issue Unit';
+    document.getElementById('bbModalTitle').textContent = t('issue_unit');
     body.innerHTML = '';
 
     // Load available units
@@ -540,7 +540,7 @@ function openIssueUnit() {
     const uDiv = document.createElement('div');
     uDiv.className = 'big-field';
     const uLbl = document.createElement('label');
-    uLbl.textContent = 'Available Unit';
+    uLbl.textContent = t('bb_available_unit');
     uDiv.appendChild(uLbl);
     const uList = document.createElement('div');
     uList.className = 'card-list';
@@ -550,7 +550,7 @@ function openIssueUnit() {
 
     authFetch('/api/bloodbank/units?status=AVAILABLE', {}).then(r => r.json()).then(units => {
         if (units.length === 0) {
-            uList.textContent = 'No available units';
+            uList.textContent = t('bb_no_available');
             return;
         }
         units.forEach(u => {
@@ -572,7 +572,7 @@ function openIssueUnit() {
     const pDiv = document.createElement('div');
     pDiv.className = 'big-field';
     const pLbl = document.createElement('label');
-    pLbl.textContent = 'Patient Name';
+    pLbl.textContent = t('bb_patient_name');
     const pInp = document.createElement('input');
     pInp.type = 'text';
     pInp.id = 'trPatient';
@@ -585,7 +585,7 @@ function openIssueUnit() {
     const bgDiv = document.createElement('div');
     bgDiv.className = 'big-field';
     const bgLbl = document.createElement('label');
-    bgLbl.textContent = 'Patient Blood Group';
+    bgLbl.textContent = t('bb_patient_bg');
     bgDiv.appendChild(bgLbl);
     const bgBtns = document.createElement('div');
     bgBtns.className = 'bg-btns';
@@ -608,7 +608,7 @@ function openIssueUnit() {
     const xDiv = document.createElement('div');
     xDiv.className = 'big-field';
     const xLbl = document.createElement('label');
-    xLbl.textContent = 'Crossmatch';
+    xLbl.textContent = t('crossmatch');
     xDiv.appendChild(xLbl);
     const xBtns = document.createElement('div');
     xBtns.className = 'posneg-btns';
@@ -616,7 +616,7 @@ function openIssueUnit() {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'posneg-btn ' + (v === 'COMPATIBLE' ? 'neg' : 'pos');
-        btn.textContent = v;
+        btn.textContent = v === 'COMPATIBLE' ? t('bb_compatible') : t('bb_incompatible');
         btn.dataset.value = v;
         btn.addEventListener('click', () => {
             xBtns.querySelectorAll('.posneg-btn').forEach(b => b.classList.remove('selected'));
@@ -631,7 +631,7 @@ function openIssueUnit() {
     const wDiv = document.createElement('div');
     wDiv.className = 'big-field';
     const wLbl = document.createElement('label');
-    wLbl.textContent = 'Ward';
+    wLbl.textContent = t('ward');
     wDiv.appendChild(wLbl);
     const wBtns = document.createElement('div');
     wBtns.className = 'ward-btns';
@@ -653,11 +653,11 @@ function openIssueUnit() {
     footer.innerHTML = '';
     const cancelBtn = document.createElement('button');
     cancelBtn.className = 'wiz-btn wiz-btn-cancel';
-    cancelBtn.textContent = 'Cancel';
+    cancelBtn.textContent = t('cancel');
     cancelBtn.addEventListener('click', closeModal);
     const saveBtn = document.createElement('button');
     saveBtn.className = 'wiz-btn wiz-btn-confirm';
-    saveBtn.textContent = 'Issue Unit';
+    saveBtn.textContent = t('issue_unit');
     saveBtn.addEventListener('click', () => {
         const bgActive = body.querySelector('.bg-btns .bg-btn.active');
         const xmActive = body.querySelector('.posneg-btn.selected');
@@ -675,7 +675,7 @@ function openIssueUnit() {
             body: JSON.stringify(payload)
         }).then(r => {
             if (r.ok) { closeModal(); loadTransfusions(); }
-            else { r.json().then(d => showModal({ title: 'Error', message: d.error || 'Error', type: 'danger' })); }
+            else { r.json().then(d => showModal({ title: t('error'), message: d.error || t('failed'), type: 'danger' })); }
         });
     });
     footer.appendChild(cancelBtn);
@@ -687,17 +687,17 @@ function openIssueUnit() {
 function openCompleteTr(tr) {
     const body = document.getElementById('bbModalBody');
     const footer = document.getElementById('bbModalFooter');
-    document.getElementById('bbModalTitle').textContent = 'Complete Transfusion';
+    document.getElementById('bbModalTitle').textContent = t('complete_transfusion');
     body.innerHTML = '';
 
     const info = document.createElement('div');
     info.className = 'confirm-summary';
     info.innerHTML = '';
     const rows = [
-        ['Unit', tr.unit_number + ' (' + tr.unit_blood_group + ')'],
-        ['Patient', tr.patient_name],
-        ['Ward', tr.issued_to_ward || '-'],
-        ['Issued', tr.issued_date || '-']
+        [t('bb_unit'), tr.unit_number + ' (' + tr.unit_blood_group + ')'],
+        [t('bb_patient'), tr.patient_name],
+        [t('ward'), tr.issued_to_ward || '-'],
+        [t('bb_issued'), tr.issued_date || '-']
     ];
     rows.forEach(([l, v]) => {
         const row = document.createElement('div');
@@ -719,7 +719,7 @@ function openCompleteTr(tr) {
     aDiv.className = 'big-field';
     aDiv.className += ' u-mt-16';
     const aLbl = document.createElement('label');
-    aLbl.textContent = 'Adverse Reaction?';
+    aLbl.textContent = t('adverse_reaction');
     aDiv.appendChild(aLbl);
     const aBtns = document.createElement('div');
     aBtns.className = 'posneg-btns';
@@ -727,7 +727,7 @@ function openCompleteTr(tr) {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'posneg-btn ' + (v === 'NO' ? 'neg' : 'pos');
-        btn.textContent = v;
+        btn.textContent = v === 'NO' ? t('no') : t('yes');
         btn.dataset.value = v;
         btn.addEventListener('click', () => {
             aBtns.querySelectorAll('.posneg-btn').forEach(b => b.classList.remove('selected'));
@@ -741,11 +741,11 @@ function openCompleteTr(tr) {
     footer.innerHTML = '';
     const cancelBtn = document.createElement('button');
     cancelBtn.className = 'wiz-btn wiz-btn-cancel';
-    cancelBtn.textContent = 'Cancel';
+    cancelBtn.textContent = t('cancel');
     cancelBtn.addEventListener('click', closeModal);
     const saveBtn = document.createElement('button');
     saveBtn.className = 'wiz-btn wiz-btn-confirm';
-    saveBtn.textContent = 'Complete Transfusion';
+    saveBtn.textContent = t('complete_transfusion');
     saveBtn.addEventListener('click', () => {
         const aActive = body.querySelector('.posneg-btn.selected');
         const payload = {

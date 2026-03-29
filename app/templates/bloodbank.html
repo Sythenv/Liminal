@@ -1,19 +1,19 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h2>Blood Bank</h2>
+<h2 data-i18n="nav_bloodbank">Blood Bank</h2>
 
 <div class="tab-bar" id="bbTabs">
-    <button class="tab-btn active" data-tab="donors">Donors</button>
-    <button class="tab-btn" data-tab="stock">Stock</button>
-    <button class="tab-btn" data-tab="transfusions">Transfusions</button>
+    <button class="tab-btn active" data-tab="donors" data-i18n="donors">Donors</button>
+    <button class="tab-btn" data-tab="stock" data-i18n="stock">Stock</button>
+    <button class="tab-btn" data-tab="transfusions" data-i18n="transfusions">Transfusions</button>
 </div>
 
 <!-- DONORS TAB -->
 <div class="tab-content" id="tab-donors">
     <div class="card-list" id="donorList"></div>
     <div id="donorEmpty" class="empty-state" style="display:none">
-        <p>No donors registered</p>
+        <p data-i18n="bb_no_donors">No donors registered</p>
     </div>
 </div>
 
@@ -21,7 +21,7 @@
 <div class="tab-content" id="tab-stock" style="display:none">
     <div class="card-list" id="unitList"></div>
     <div id="unitEmpty" class="empty-state" style="display:none">
-        <p>No blood units in stock</p>
+        <p data-i18n="bb_no_units">No blood units in stock</p>
     </div>
 </div>
 
@@ -29,7 +29,7 @@
 <div class="tab-content" id="tab-transfusions" style="display:none">
     <div class="card-list" id="transfusionList"></div>
     <div id="trEmpty" class="empty-state" style="display:none">
-        <p>No transfusion records</p>
+        <p data-i18n="bb_no_transfusions">No transfusion records</p>
     </div>
 </div>
 

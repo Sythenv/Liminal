@@ -3,12 +3,31 @@
 let selectedEquipId = null;
 
 const CATEGORIES = [
-    'Freezer', 'Refrigerator', 'Microscope', 'Centrifuge', 'Analyzer',
-    'Incubator', 'Autoclave', 'Balance', 'Timer', 'Thermometer',
-    'Pipette', 'Water Bath', 'Vortex', 'Safety Cabinet', 'Generator', 'UPS', 'Other'
+    {value: 'Freezer', key: 'eq_cat_freezer'},
+    {value: 'Refrigerator', key: 'eq_cat_refrigerator'},
+    {value: 'Microscope', key: 'eq_cat_microscope'},
+    {value: 'Centrifuge', key: 'eq_cat_centrifuge'},
+    {value: 'Analyzer', key: 'eq_cat_analyzer'},
+    {value: 'Incubator', key: 'eq_cat_incubator'},
+    {value: 'Autoclave', key: 'eq_cat_autoclave'},
+    {value: 'Balance', key: 'eq_cat_balance'},
+    {value: 'Timer', key: 'eq_cat_timer'},
+    {value: 'Thermometer', key: 'eq_cat_thermometer'},
+    {value: 'Pipette', key: 'eq_cat_pipette'},
+    {value: 'Water Bath', key: 'eq_cat_water_bath'},
+    {value: 'Vortex', key: 'eq_cat_vortex'},
+    {value: 'Safety Cabinet', key: 'eq_cat_safety_cabinet'},
+    {value: 'Generator', key: 'eq_cat_generator'},
+    {value: 'UPS', key: 'eq_cat_ups'},
+    {value: 'Other', key: 'eq_cat_other'}
 ];
 
-const CONDITIONS = ['Good', 'Fair', 'Poor', 'Out of service'];
+const CONDITIONS = [
+    {value: 'Good', key: 'eq_cond_good'},
+    {value: 'Fair', key: 'eq_cond_fair'},
+    {value: 'Poor', key: 'eq_cond_poor'},
+    {value: 'Out of service', key: 'eq_cond_out'}
+];
 const FREQUENCIES = ['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly'];
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -47,10 +66,10 @@ function loadEquipment() {
             // Maintenance badges
             const badges = [];
             if (eq.last_maintenance) {
-                badges.push({ text: 'Last: ' + eq.last_maintenance.log_date + ' (' + eq.last_maintenance.maintenance_type + ')', cls: 'has-result' });
+                badges.push({ text: t('eq_last') + ': ' + eq.last_maintenance.log_date + ' (' + eq.last_maintenance.maintenance_type + ')', cls: 'has-result' });
                 if (eq.last_maintenance.next_scheduled) {
                     const overdue = eq.last_maintenance.next_scheduled < today;
-                    badges.push({ text: (overdue ? 'OVERDUE: ' : 'Next: ') + eq.last_maintenance.next_scheduled, cls: overdue ? 'result-positive' : '' });
+                    badges.push({ text: (overdue ? t('eq_overdue') + ': ' : t('eq_next') + ': ') + eq.last_maintenance.next_scheduled, cls: overdue ? 'result-positive' : '' });
                 }
             }
 
@@ -75,7 +94,7 @@ function loadEquipment() {
 
 function selectEquipment(eq) {
     selectedEquipId = eq.id;
-    document.getElementById('maintTitle').textContent = eq.name + ' - Maintenance Log';
+    document.getElementById('maintTitle').textContent = eq.name + ' - ' + t('eq_maintenance_log');
     document.getElementById('maintSection').style.display = 'block';
     loadEquipment(); // Re-render to highlight
     loadMaintenance(eq.id);
@@ -95,9 +114,9 @@ function loadMaintenance(eqId) {
             const typeStatus = { PREVENTIVE: 'completed', CORRECTIVE: 'in_progress', CALIBRATION: 'registered' };
 
             const parts = [];
-            if (log.performed_by) parts.push('By: ' + log.performed_by);
-            if (log.parts_replaced) parts.push('Parts: ' + log.parts_replaced);
-            if (log.next_scheduled) parts.push('Next: ' + log.next_scheduled);
+            if (log.performed_by) parts.push(t('eq_by') + ': ' + log.performed_by);
+            if (log.parts_replaced) parts.push(t('eq_parts') + ': ' + log.parts_replaced);
+            if (log.next_scheduled) parts.push(t('eq_next') + ': ' + log.next_scheduled);
 
             const card = createCard({
                 id: log.log_date,
@@ -122,14 +141,14 @@ function loadMaintenance(eqId) {
 function openAddEquipment() {
     const body = document.getElementById('eqModalBody');
     const footer = document.getElementById('eqModalFooter');
-    document.getElementById('eqModalTitle').textContent = 'Add Equipment';
+    document.getElementById('eqModalTitle').textContent = t('add_equipment');
     body.innerHTML = '';
 
     // Category buttons
     const catDiv = document.createElement('div');
     catDiv.className = 'big-field';
     const catLbl = document.createElement('label');
-    catLbl.textContent = 'Category';
+    catLbl.textContent = t('category');
     catDiv.appendChild(catLbl);
     const catBtns = document.createElement('div');
     catBtns.className = 'test-btns';
@@ -137,8 +156,8 @@ function openAddEquipment() {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'test-btn';
-        btn.textContent = c;
-        btn.dataset.value = c;
+        btn.textContent = t(c.key);
+        btn.dataset.value = c.value;
         btn.addEventListener('click', () => {
             catBtns.querySelectorAll('.test-btn').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
@@ -150,11 +169,11 @@ function openAddEquipment() {
 
     // Text fields
     const textFields = [
-        { id: 'eqName', label: 'Name / Description' },
-        { id: 'eqModel', label: 'Model' },
-        { id: 'eqSerial', label: 'Serial Number' },
-        { id: 'eqManufacturer', label: 'Manufacturer' },
-        { id: 'eqLocation', label: 'Location' },
+        { id: 'eqName', label: t('name_desc') },
+        { id: 'eqModel', label: t('model') },
+        { id: 'eqSerial', label: t('serial_number') },
+        { id: 'eqManufacturer', label: t('manufacturer') },
+        { id: 'eqLocation', label: t('location') },
     ];
     textFields.forEach(f => {
         const div = document.createElement('div');
@@ -174,7 +193,7 @@ function openAddEquipment() {
     const dDiv = document.createElement('div');
     dDiv.className = 'big-field';
     const dLbl = document.createElement('label');
-    dLbl.textContent = 'Installation Date';
+    dLbl.textContent = t('installation_date');
     const dInp = document.createElement('input');
     dInp.type = 'date';
     dInp.id = 'eqDate';
@@ -187,16 +206,16 @@ function openAddEquipment() {
     const condDiv = document.createElement('div');
     condDiv.className = 'big-field';
     const condLbl = document.createElement('label');
-    condLbl.textContent = 'Physical Condition';
+    condLbl.textContent = t('condition');
     condDiv.appendChild(condLbl);
     const condBtns = document.createElement('div');
     condBtns.className = 'ward-btns';
     CONDITIONS.forEach(c => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'ward-btn' + (c === 'Good' ? ' active' : '');
-        btn.textContent = c;
-        btn.dataset.value = c;
+        btn.className = 'ward-btn' + (c.value === 'Good' ? ' active' : '');
+        btn.textContent = t(c.key);
+        btn.dataset.value = c.value;
         btn.addEventListener('click', () => {
             condBtns.querySelectorAll('.ward-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
@@ -209,11 +228,11 @@ function openAddEquipment() {
     footer.innerHTML = '';
     const cancelBtn = document.createElement('button');
     cancelBtn.className = 'wiz-btn wiz-btn-cancel';
-    cancelBtn.textContent = 'Cancel';
+    cancelBtn.textContent = t('cancel');
     cancelBtn.addEventListener('click', closeModal);
     const saveBtn = document.createElement('button');
     saveBtn.className = 'wiz-btn wiz-btn-confirm';
-    saveBtn.textContent = 'Add Equipment';
+    saveBtn.textContent = t('add_equipment');
     saveBtn.addEventListener('click', () => {
         const catActive = body.querySelector('.test-btn.selected');
         const condActive = body.querySelector('.ward-btn.active');
@@ -233,7 +252,7 @@ function openAddEquipment() {
             body: JSON.stringify(payload)
         }).then(r => {
             if (r.ok) { closeModal(); loadEquipment(); }
-            else { r.json().then(d => showModal({ title: 'Error', message: d.error || 'Failed', type: 'danger' })); }
+            else { r.json().then(d => showModal({ title: t('error'), message: d.error || t('failed'), type: 'danger' })); }
         });
     });
     footer.appendChild(cancelBtn);
@@ -245,24 +264,29 @@ function openAddEquipment() {
 function openAddMaintenance() {
     const body = document.getElementById('eqModalBody');
     const footer = document.getElementById('eqModalFooter');
-    document.getElementById('eqModalTitle').textContent = 'Log Maintenance';
+    document.getElementById('eqModalTitle').textContent = t('log_maintenance');
     body.innerHTML = '';
 
     // Type buttons
     const tDiv = document.createElement('div');
     tDiv.className = 'big-field';
     const tLbl = document.createElement('label');
-    tLbl.textContent = 'Maintenance Type';
+    tLbl.textContent = t('maintenance_type');
     tDiv.appendChild(tLbl);
     const tBtns = document.createElement('div');
     tBtns.className = 'ward-btns';
     tBtns.style.gridTemplateColumns = 'repeat(3, 1fr)';
-    ['PREVENTIVE', 'CORRECTIVE', 'CALIBRATION'].forEach(t => {
+    const MAINT_TYPES = [
+        {value: 'PREVENTIVE', key: 'eq_maint_preventive'},
+        {value: 'CORRECTIVE', key: 'eq_maint_corrective'},
+        {value: 'CALIBRATION', key: 'eq_maint_calibration'}
+    ];
+    MAINT_TYPES.forEach(mt => {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'ward-btn';
-        btn.textContent = t;
-        btn.dataset.value = t;
+        btn.textContent = t(mt.key);
+        btn.dataset.value = mt.value;
         btn.addEventListener('click', () => {
             tBtns.querySelectorAll('.ward-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
@@ -276,7 +300,7 @@ function openAddMaintenance() {
     const dDiv = document.createElement('div');
     dDiv.className = 'big-field';
     const dLbl = document.createElement('label');
-    dLbl.textContent = 'Description';
+    dLbl.textContent = t('description');
     const dInp = document.createElement('input');
     dInp.type = 'text';
     dInp.id = 'mDesc';
@@ -289,7 +313,7 @@ function openAddMaintenance() {
     const pDiv = document.createElement('div');
     pDiv.className = 'big-field';
     const pLbl = document.createElement('label');
-    pLbl.textContent = 'Parts Replaced';
+    pLbl.textContent = t('parts_replaced');
     const pInp = document.createElement('input');
     pInp.type = 'text';
     pInp.id = 'mParts';
@@ -302,7 +326,7 @@ function openAddMaintenance() {
     const byDiv = document.createElement('div');
     byDiv.className = 'big-field';
     const byLbl = document.createElement('label');
-    byLbl.textContent = 'Performed By';
+    byLbl.textContent = t('performed_by');
     const byInp = document.createElement('input');
     byInp.type = 'text';
     byInp.id = 'mBy';
@@ -315,7 +339,7 @@ function openAddMaintenance() {
     const nDiv = document.createElement('div');
     nDiv.className = 'big-field';
     const nLbl = document.createElement('label');
-    nLbl.textContent = 'Next Scheduled';
+    nLbl.textContent = t('next_scheduled');
     const nInp = document.createElement('input');
     nInp.type = 'date';
     nInp.id = 'mNext';
@@ -327,11 +351,11 @@ function openAddMaintenance() {
     footer.innerHTML = '';
     const cancelBtn = document.createElement('button');
     cancelBtn.className = 'wiz-btn wiz-btn-cancel';
-    cancelBtn.textContent = 'Cancel';
+    cancelBtn.textContent = t('cancel');
     cancelBtn.addEventListener('click', closeModal);
     const saveBtn = document.createElement('button');
     saveBtn.className = 'wiz-btn wiz-btn-confirm';
-    saveBtn.textContent = 'Save';
+    saveBtn.textContent = t('save');
     saveBtn.addEventListener('click', () => {
         const tActive = body.querySelector('.ward-btn.active');
         const payload = {
@@ -347,7 +371,7 @@ function openAddMaintenance() {
             body: JSON.stringify(payload)
         }).then(r => {
             if (r.ok) { closeModal(); loadEquipment(); loadMaintenance(selectedEquipId); }
-            else { r.json().then(d => showModal({ title: 'Error', message: d.error || 'Failed', type: 'danger' })); }
+            else { r.json().then(d => showModal({ title: t('error'), message: d.error || t('failed'), type: 'danger' })); }
         });
     });
     footer.appendChild(cancelBtn);

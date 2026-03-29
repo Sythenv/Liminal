@@ -59,11 +59,11 @@ function openPatientDetail(patientId) {
             const demo = document.createElement('div');
             demo.className = 'confirm-summary';
             const rows = [
-                ['Age', data.age ? data.age + (data.age_unit || 'Y') : '-'],
-                ['Sex', data.sex || '-'],
-                ['Village', data.village || '-'],
-                ['Contact', data.contact || '-'],
-                ['Registered', data.created_at || '-']
+                [t('age'), data.age ? data.age + (data.age_unit || 'Y') : '-'],
+                [t('sex'), data.sex || '-'],
+                [t('pat_village'), data.village || '-'],
+                [t('contact'), data.contact || '-'],
+                [t('pat_registered'), data.created_at || '-']
             ];
             rows.forEach(([label, value]) => {
                 const row = document.createElement('div');
@@ -82,14 +82,14 @@ function openPatientDetail(patientId) {
 
             // Lab history
             const histTitle = document.createElement('h3');
-            histTitle.textContent = 'Lab History (' + data.lab_history.length + ')';
+            histTitle.textContent = t('pat_lab_history') + ' (' + data.lab_history.length + ')';
             histTitle.className = 'lab-history-title';
             body.appendChild(histTitle);
 
             if (data.lab_history.length === 0) {
                 const empty = document.createElement('div');
                 empty.className = 'result-readonly';
-                empty.textContent = 'No lab records';
+                empty.textContent = t('pat_no_records');
                 body.appendChild(empty);
             } else {
                 data.lab_history.forEach(entry => {

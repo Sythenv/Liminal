@@ -20,7 +20,7 @@ function showNumpad(callback, message) {
 
     dots.textContent = '';
     err.style.display = 'none';
-    msg.textContent = message || 'Enter your PIN';
+    msg.textContent = message || t('pin_enter');
     overlay.style.display = 'flex';
     overlay.dataset.pin = '';
     shuffleNumpad();
@@ -98,7 +98,7 @@ function verifyPin(pin) {
                 pinCallback = null;
             }
         } else {
-            showPinError(data.error || 'Invalid PIN');
+            showPinError(data.error || t('pin_invalid'));
         }
     });
 }
@@ -267,18 +267,18 @@ function showObScreen1() {
 
     const title = document.createElement('div');
     title.className = 'ob-title';
-    title.textContent = 'Welcome to Liminal';
+    title.textContent = t('ob_welcome');
     wiz.appendChild(title);
 
     const sub = document.createElement('div');
     sub.className = 'ob-subtitle';
-    sub.textContent = 'Let\u2019s set up your laboratory. What\u2019s your name?';
+    sub.textContent = t('ob_whats_your_name');
     wiz.appendChild(sub);
 
     const nameInput = document.createElement('input');
     nameInput.className = 'ob-input-big';
     nameInput.type = 'text';
-    nameInput.placeholder = 'Your name';
+    nameInput.placeholder = t('ob_your_name');
     nameInput.autocomplete = 'off';
     if (setupData.name) nameInput.value = setupData.name;
     wiz.appendChild(nameInput);
@@ -287,7 +287,7 @@ function showObScreen1() {
     actions.className = 'ob-actions';
     const nextBtn = document.createElement('button');
     nextBtn.className = 'ob-btn ob-btn-primary';
-    nextBtn.textContent = 'Continue \u2192';
+    nextBtn.textContent = t('ob_continue');
     nextBtn.disabled = !nameInput.value.trim();
     nameInput.addEventListener('input', () => {
         nextBtn.disabled = !nameInput.value.trim();
@@ -330,7 +330,7 @@ function obGoScreen2() {
     document.getElementById('pinError').style.display = 'none';
     const msg = document.getElementById('pinMessage');
     msg.style.display = 'block';
-    msg.innerHTML = '<span class="ob-greeting">Hi, ' + escapeHtml(setupData.name) + '</span><br>Choose a 4\u20138 digit PIN';
+    msg.innerHTML = '<span class="ob-greeting">' + t('ob_hi') + ' ' + escapeHtml(setupData.name) + '</span><br>' + t('pin_choose');
     // Hide demo hint during setup
     var hint = document.querySelector('.pin-demo-hint');
     if (hint) hint.style.display = 'none';
@@ -353,7 +353,7 @@ function obGoScreen3() {
     document.getElementById('pinError').style.display = 'none';
     const msg = document.getElementById('pinMessage');
     msg.style.display = 'block';
-    msg.textContent = 'Confirm your PIN';
+    msg.textContent = t('pin_confirm');
     shuffleNumpad();
 
     // Add "start over" link below demo hints
@@ -362,7 +362,7 @@ function obGoScreen3() {
         startOver = document.createElement('button');
         startOver.id = 'obStartOver';
         startOver.className = 'ob-back';
-        startOver.textContent = '\u2190 Start over';
+        startOver.textContent = t('pin_start_over');
         startOver.style.marginTop = '12px';
         startOver.addEventListener('click', () => {
             startOver.remove();
@@ -384,7 +384,7 @@ function handleSetupPin(pin) {
     } else if (setupStep === 3) {
         // Screen 3: confirm PIN
         if (pin !== setupData.pin) {
-            showPinError('PINs don\u2019t match \u2014 try again');
+            showPinError(t('pin_no_match'));
             // Back to screen 2 to re-enter PIN
             setupData.pin = null;
             obGoScreen2();
@@ -406,7 +406,7 @@ function handleSetupPin(pin) {
                 setSession(pin, 3, setupData.name);
                 obGoScreen4();
             } else {
-                showPinError(data.error || 'Setup failed');
+                showPinError(data.error || t('failed'));
             }
         });
     }
@@ -435,12 +435,12 @@ function obGoScreen4() {
 
     const title = document.createElement('div');
     title.className = 'ob-title';
-    title.textContent = 'Configure your lab';
+    title.textContent = t('ob_configure');
     wiz.appendChild(title);
 
     const sub = document.createElement('div');
     sub.className = 'ob-subtitle';
-    sub.textContent = 'Basic site information';
+    sub.textContent = t('ob_basic_info');
     wiz.appendChild(sub);
 
     const form = document.createElement('div');
@@ -450,15 +450,15 @@ function obGoScreen4() {
     fetch('/api/config')
         .then(r => r.json())
         .then(config => {
-            const nameInput = createInput({ id: 'obSiteName', placeholder: 'Laboratory name', value: config.site_name || '' });
-            form.appendChild(createField('Site Name', nameInput));
+            const nameInput = createInput({ id: 'obSiteName', placeholder: t('ob_site_name'), value: config.site_name || '' });
+            form.appendChild(createField(t('ob_site_name'), nameInput));
 
-            const codeInput = createInput({ id: 'obSiteCode', placeholder: '3-5 characters', value: config.site_code || '' });
+            const codeInput = createInput({ id: 'obSiteCode', placeholder: '3-5', value: config.site_code || '' });
             codeInput.maxLength = 5;
-            form.appendChild(createField('Site Code', codeInput));
+            form.appendChild(createField(t('ob_site_code'), codeInput));
 
-            const countryInput = createInput({ id: 'obCountry', placeholder: 'Country', value: config.country || '' });
-            form.appendChild(createField('Country', countryInput));
+            const countryInput = createInput({ id: 'obCountry', placeholder: t('ob_country'), value: config.country || '' });
+            form.appendChild(createField(t('ob_country'), countryInput));
 
             const langGroup = createButtonGroup({
                 items: [
@@ -469,7 +469,7 @@ function obGoScreen4() {
                 columns: 3
             });
             langGroup.setValue(config.default_language || 'en');
-            form.appendChild(createField('Default Language', langGroup.element));
+            form.appendChild(createField(t('ob_default_lang'), langGroup.element));
 
             wiz.appendChild(form);
 
@@ -478,7 +478,7 @@ function obGoScreen4() {
 
             const nextBtn = document.createElement('button');
             nextBtn.className = 'ob-btn ob-btn-primary';
-            nextBtn.textContent = 'Next \u2192';
+            nextBtn.textContent = t('next');
             nextBtn.addEventListener('click', () => {
                 const siteName = nameInput.value.trim();
                 const siteCode = codeInput.value.trim().toUpperCase();
@@ -529,12 +529,12 @@ function obGoScreen5() {
 
     const title = document.createElement('div');
     title.className = 'ob-title';
-    title.textContent = 'Active tests';
+    title.textContent = t('ob_active_tests');
     wiz.appendChild(title);
 
     const sub = document.createElement('div');
     sub.className = 'ob-subtitle';
-    sub.textContent = 'Select the tests available at this site';
+    sub.textContent = t('ob_select_tests');
     wiz.appendChild(sub);
 
     fetch('/api/config/tests/all')
@@ -560,13 +560,13 @@ function obGoScreen5() {
 
             const backBtn = document.createElement('button');
             backBtn.className = 'ob-back';
-            backBtn.textContent = '\u2190 Back';
+            backBtn.textContent = t('back');
             backBtn.addEventListener('click', obGoScreen4);
             actions.appendChild(backBtn);
 
             const nextBtn = document.createElement('button');
             nextBtn.className = 'ob-btn ob-btn-primary';
-            nextBtn.textContent = 'Next \u2192';
+            nextBtn.textContent = t('next');
             nextBtn.addEventListener('click', () => {
                 const activeCodes = toggles
                     .filter(b => b.classList.contains('selected'))
@@ -602,12 +602,12 @@ function obGoScreen6() {
 
     const title = document.createElement('div');
     title.className = 'ob-title';
-    title.textContent = 'Your team';
+    title.textContent = t('ob_your_team');
     wiz.appendChild(title);
 
     const sub = document.createElement('div');
     sub.className = 'ob-subtitle';
-    sub.textContent = 'Add at least one supervisor and one technician';
+    sub.textContent = t('ob_add_team_hint');
     wiz.appendChild(sub);
 
     const layout = document.createElement('div');
@@ -639,7 +639,7 @@ function obGoScreen6() {
         header.className = 'ob-op-card-header';
         const cardTitle = document.createElement('div');
         cardTitle.className = 'ob-op-card-title';
-        cardTitle.textContent = level === 2 ? 'Add Supervisor' : 'Add Technician';
+        cardTitle.textContent = level === 2 ? t('ob_add_supervisor') : t('ob_add_technician');
         header.appendChild(cardTitle);
         const badge = document.createElement('span');
         badge.className = 'ob-level-badge level-' + level;
@@ -648,12 +648,12 @@ function obGoScreen6() {
         card.appendChild(header);
 
         const nameInput = document.createElement('input');
-        nameInput.placeholder = 'Name';
+        nameInput.placeholder = t('name');
         nameInput.type = 'text';
         card.appendChild(nameInput);
 
         const pinInput = document.createElement('input');
-        pinInput.placeholder = 'PIN (4-8 digits)';
+        pinInput.placeholder = t('ob_pin_hint');
         pinInput.type = 'password';
         pinInput.inputMode = 'numeric';
         pinInput.pattern = '[0-9]*';
@@ -666,7 +666,7 @@ function obGoScreen6() {
 
         const addBtn = document.createElement('button');
         addBtn.className = 'ob-op-add';
-        addBtn.textContent = 'Add';
+        addBtn.textContent = t('add');
         addBtn.addEventListener('click', () => {
             errMsg.style.display = 'none';
             const name = nameInput.value.trim();
@@ -694,7 +694,7 @@ function obGoScreen6() {
                     renderPills();
                     updateNextBtn();
                 } else {
-                    errMsg.textContent = data.error || 'Could not create operator';
+                    errMsg.textContent = data.error || t('failed');
                     errMsg.style.display = 'block';
                 }
             });
@@ -715,7 +715,7 @@ function obGoScreen6() {
 
     const backBtn = document.createElement('button');
     backBtn.className = 'ob-back';
-    backBtn.textContent = '\u2190 Back';
+    backBtn.textContent = t('back');
     backBtn.addEventListener('click', obGoScreen5);
     actions.appendChild(backBtn);
 
@@ -741,7 +741,7 @@ function obGoScreen6() {
 
     const skipBtn = document.createElement('button');
     skipBtn.className = 'ob-skip';
-    skipBtn.textContent = 'Skip for now';
+    skipBtn.textContent = t('ob_skip');
     skipBtn.addEventListener('click', obGoScreen7);
     layout.appendChild(skipBtn);
 
@@ -765,7 +765,7 @@ function obGoScreen7() {
     const siteName = onboardingData.siteConfig.site_name || 'Your laboratory';
     const title = document.createElement('div');
     title.className = 'ob-title';
-    title.textContent = siteName + ' is ready';
+    title.textContent = siteName + ' ' + t('ob_is_ready');
     wiz.appendChild(title);
 
     const sub = document.createElement('div');
@@ -774,20 +774,20 @@ function obGoScreen7() {
     const siteCode = onboardingData.siteConfig.site_code || '\u2014';
     const testCount = onboardingData.activeTests.length;
     const opCount = onboardingData.createdOperators.length;
-    sub.innerHTML = 'Site code: <strong>' + escapeHtml(siteCode) + '</strong><br>' +
-        testCount + ' active test' + (testCount !== 1 ? 's' : '') + '<br>' +
-        opCount + ' operator' + (opCount !== 1 ? 's' : '') + ' created';
+    sub.innerHTML = t('ob_code') + ': <strong>' + escapeHtml(siteCode) + '</strong><br>' +
+        testCount + ' ' + t('ob_tests_count') + (testCount !== 1 ? 's' : '') + '<br>' +
+        opCount + ' ' + t('ob_ops_count') + (opCount !== 1 ? 's' : '') + ' ' + t('ob_created');
     wiz.appendChild(sub);
 
     // Recap
     const recap = document.createElement('div');
     recap.className = 'ob-recap';
     const rows = [
-        ['Site', siteName],
-        ['Code', siteCode],
-        ['Country', onboardingData.siteConfig.country || '\u2014'],
-        ['Tests', testCount],
-        ['Operators', opCount + 1] // +1 for admin
+        [t('ob_site'), siteName],
+        [t('ob_code'), siteCode],
+        [t('ob_country'), onboardingData.siteConfig.country || '\u2014'],
+        [t('tests'), testCount],
+        [t('ob_ops_count') + 's', opCount + 1] // +1 for admin
     ];
     rows.forEach(([label, value]) => {
         const row = document.createElement('div');
@@ -799,7 +799,7 @@ function obGoScreen7() {
 
     const startBtn = document.createElement('button');
     startBtn.className = 'ob-btn ob-btn-green';
-    startBtn.textContent = 'Start using Liminal \u2192';
+    startBtn.textContent = t('ob_start_using');
     startBtn.addEventListener('click', () => {
         wiz.style.display = 'none';
         document.getElementById('pinPad').style.display = '';
@@ -934,7 +934,7 @@ function unlockNav() {
             if (data.id) setSession(pin, data.level, data.name);
         });
         applyNavUnlock();
-    }, 'Enter PIN to unlock');
+    }, t('pin_unlock'));
 }
 
 function applyNavUnlock() {

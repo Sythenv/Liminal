@@ -262,7 +262,7 @@ function loadWorklistEntries(statusFilter) {
             const countEl = document.getElementById('worklistCount');
             container.innerHTML = '';
 
-            countEl.textContent = entries.length + (getCurrentLang() === 'fr' ? ' échantillon(s)' : ' sample(s)');
+            countEl.textContent = entries.length + ' ' + t('reg_samples');
 
             if (entries.length === 0) {
                 empty.style.display = 'block';
@@ -356,7 +356,7 @@ function buildWorklistCard(entry) {
             btnRow.className = 'card-actions';
             const vBtn = document.createElement('button');
             vBtn.className = 'card-validate-btn';
-            vBtn.textContent = getCurrentLang() === 'fr' ? 'Valider' : 'Validate';
+            vBtn.textContent = t('reg_validate');
             vBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 executeValidate(entry.id);
@@ -372,7 +372,7 @@ function buildWorklistCard(entry) {
         printRow.className = 'card-actions';
         const pBtn = document.createElement('button');
         pBtn.className = 'card-print-btn';
-        pBtn.textContent = getCurrentLang() === 'fr' ? 'Imprimer' : 'Print';
+        pBtn.textContent = t('reg_print');
         pBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             printResults(entry.id);
@@ -684,7 +684,7 @@ function buildReviewTable(entries) {
         tdActions.className = 'rv-actions';
         const vBtn = document.createElement('button');
         vBtn.className = 'rv-validate';
-        vBtn.textContent = 'Validate';
+        vBtn.textContent = t('reg_validate');
         vBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             executeValidate(entry.id);
@@ -811,7 +811,7 @@ function renderCards(entries) {
     const lang = getCurrentLang();
 
     count.textContent = entries.length === 0 ? '' :
-        `${entries.length} ${lang === 'fr' ? 'echantillon(s)' : 'sample(s)'}`;
+        `${entries.length} ${t('reg_samples')}`;
 
     if (entries.length === 0) {
         list.innerHTML = '';
@@ -867,7 +867,7 @@ function buildCard(entry) {
     if (entry.status === 'REJECTED' && entry.rejection_reason) {
         const rejBadge = document.createElement('span');
         rejBadge.className = 'rejection-badge';
-        rejBadge.textContent = entry.rejection_reason.replace(/_/g, ' ');
+        rejBadge.textContent = t('rej_' + entry.rejection_reason.toLowerCase());
         card.appendChild(rejBadge);
     }
 
@@ -1295,7 +1295,7 @@ function renderStructuredField(item, test, currentVal, isRejected) {
     if (isLegacy && !isRejected) {
         const note = document.createElement('div');
         note.className = 'legacy-note';
-        note.textContent = 'Previous: ' + currentVal;
+        note.textContent = t('reg_previous') + ': ' + currentVal;
         item.appendChild(note);
     }
 
@@ -1350,7 +1350,7 @@ function renderStructuredField(item, test, currentVal, isRejected) {
             const warning = document.createElement('div');
             warning.className = 'panic-warning';
             warning.style.display = 'none';
-            warning.textContent = 'CRITICAL VALUE - verify result';
+            warning.textContent = t('reg_critical_value');
             row.appendChild(warning);
 
             if (savedVal) checkSubPanic(input, field);
@@ -1475,14 +1475,14 @@ function openResults(entryId, prefetchedEntry) {
             const rejectFooter = document.getElementById('rejectFooter');
 
             if (isRejected) {
-                banner.textContent = `REJECTED: ${(entry.rejection_reason || 'No reason').replace(/_/g, ' ')}`;
+                banner.textContent = t('reg_rejected') + ': ' + (entry.rejection_reason ? t('rej_' + entry.rejection_reason.toLowerCase()) : '');
                 banner.style.display = 'block';
                 resultFooter.style.display = 'none';
                 rejectFooter.style.display = 'flex';
                 rejectFooter.innerHTML = '';
                 const unrejectBtn = document.createElement('button');
                 unrejectBtn.className = 'wiz-btn unreject-btn';
-                unrejectBtn.textContent = 'Undo Rejection';
+                unrejectBtn.textContent = t('undo_rejection');
                 unrejectBtn.addEventListener('click', () => executeUnreject(entry.id));
                 rejectFooter.appendChild(unrejectBtn);
             } else if (isReview) {
@@ -1498,14 +1498,14 @@ function openResults(entryId, prefetchedEntry) {
 
                 const validateBtn = document.createElement('button');
                 validateBtn.className = 'wiz-btn validate-btn';
-                validateBtn.textContent = 'Validate Results';
+                validateBtn.textContent = t('reg_validate');
                 validateBtn.style.width = '100%';
                 validateBtn.addEventListener('click', () => executeValidate(entry.id));
                 rejectFooter.appendChild(validateBtn);
 
                 const rejectBtn = document.createElement('button');
                 rejectBtn.className = 'reject-pill';
-                rejectBtn.textContent = 'Reject sample';
+                rejectBtn.textContent = t('reject_sample');
                 rejectBtn.addEventListener('click', () => startRejectFlow());
                 rejectFooter.appendChild(rejectBtn);
 
@@ -1535,7 +1535,7 @@ function openResults(entryId, prefetchedEntry) {
                             histDiv.className = 'ctx-history';
                             const histTitle = document.createElement('div');
                             histTitle.className = 'ctx-history-title';
-                            histTitle.textContent = 'Previous';
+                            histTitle.textContent = t('reg_previous');
                             histDiv.appendChild(histTitle);
 
                             ctx.history.forEach(h => {
@@ -1645,7 +1645,7 @@ function openResults(entryId, prefetchedEntry) {
                     const warning = document.createElement('div');
                     warning.className = 'panic-warning';
                     warning.style.display = 'none';
-                    warning.textContent = 'CRITICAL VALUE - verify result';
+                    warning.textContent = t('reg_critical_value');
 
                     item.appendChild(container);
                     item.appendChild(warning);
@@ -1671,7 +1671,7 @@ function openResults(entryId, prefetchedEntry) {
             const histBtn = document.createElement('button');
             histBtn.type = 'button';
             histBtn.className = 'history-btn';
-            histBtn.textContent = 'History';
+            histBtn.textContent = t('history');
             histBtn.addEventListener('click', () => loadAuditTrail(entry.id));
             historyLink.appendChild(histBtn);
             fields.appendChild(historyLink);
@@ -1700,14 +1700,14 @@ function loadAuditTrail(entryId) {
 
             const integ = document.createElement('div');
             integ.className = data.integrity === true ? 'audit-integrity ok' : 'audit-integrity fail';
-            integ.textContent = data.integrity === true ? 'Integrity: OK' :
-                data.integrity === false ? 'Integrity: TAMPER DETECTED' : 'Integrity: No audit data';
+            integ.textContent = data.integrity === true ? t('reg_integrity_ok') :
+                data.integrity === false ? t('reg_integrity_tamper') : t('reg_integrity_none');
             fields.appendChild(integ);
 
             if (data.trail.length === 0) {
                 const empty = document.createElement('div');
                 empty.className = 'result-readonly';
-                empty.textContent = 'No audit history (created before audit was enabled)';
+                empty.textContent = t('reg_no_audit');
                 fields.appendChild(empty);
                 return;
             }
@@ -1786,7 +1786,7 @@ function updateSaveButton() {
     if (!btn) return;
 
     if (hasPanicValues()) {
-        btn.textContent = 'Confirm Critical Values';
+        btn.textContent = t('reg_confirm_critical');
         btn.className = 'wiz-btn wiz-btn-panic-confirm';
     } else {
         resetSaveButton();
@@ -1796,7 +1796,7 @@ function updateSaveButton() {
 function resetSaveButton() {
     const btn = document.getElementById('btnSaveResults');
     if (!btn) return;
-    btn.textContent = 'Save Results';
+    btn.textContent = t('save_results');
     btn.className = 'wiz-btn wiz-btn-confirm';
 }
 
@@ -1816,7 +1816,7 @@ function startRejectFlow() {
     fields.innerHTML = '';
     const title = document.createElement('div');
     title.className = 'reject-title';
-    title.textContent = 'Select rejection reason:';
+    title.textContent = t('reg_select_reason');
     fields.appendChild(title);
 
     const grid = document.createElement('div');
@@ -1825,7 +1825,7 @@ function startRejectFlow() {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'reject-reason-btn';
-        btn.textContent = reason.replace(/_/g, ' ');
+        btn.textContent = t('rej_' + reason.toLowerCase());
         btn.addEventListener('click', () => confirmReject(reason));
         grid.appendChild(btn);
     });
@@ -1835,7 +1835,7 @@ function startRejectFlow() {
     rejectFooter.innerHTML = '';
     const cancelBtn = document.createElement('button');
     cancelBtn.className = 'wiz-btn wiz-btn-cancel';
-    cancelBtn.textContent = 'Cancel';
+    cancelBtn.textContent = t('cancel');
     cancelBtn.addEventListener('click', cancelReject);
     rejectFooter.appendChild(cancelBtn);
 }
@@ -1861,7 +1861,7 @@ function confirmReject(reason) {
     text.appendChild(strong1);
     text.appendChild(document.createTextNode(' as '));
     const strong2 = document.createElement('strong');
-    strong2.textContent = reason.replace(/_/g, ' ');
+    strong2.textContent = t('rej_' + reason.toLowerCase());
     text.appendChild(strong2);
     text.appendChild(document.createTextNode('?'));
     box.appendChild(icon);
@@ -1871,11 +1871,11 @@ function confirmReject(reason) {
     rejectFooter.innerHTML = '';
     const cancelBtn = document.createElement('button');
     cancelBtn.className = 'wiz-btn wiz-btn-cancel';
-    cancelBtn.textContent = 'Cancel';
+    cancelBtn.textContent = t('cancel');
     cancelBtn.addEventListener('click', cancelReject);
     const confirmBtn = document.createElement('button');
     confirmBtn.className = 'wiz-btn wiz-btn-reject-confirm';
-    confirmBtn.textContent = 'Confirm Rejection';
+    confirmBtn.textContent = t('reg_confirm_rejection');
     confirmBtn.addEventListener('click', () => executeReject(reason));
     rejectFooter.appendChild(cancelBtn);
     rejectFooter.appendChild(confirmBtn);
@@ -1889,10 +1889,10 @@ function executeReject(reason) {
     }).then(r => {
         if (r.ok) {
             closeResultModal();
-            showSuccess('REJECTED', 'var(--primary)');
+            showSuccess(t('reg_rejected'), 'var(--primary)');
             refreshWorklist();
         } else {
-            r.json().then(d => showModal({ title: 'Error', message: d.error || 'Rejection failed', type: 'danger' }));
+            r.json().then(d => showModal({ title: t('error'), message: d.error || t('failed'), type: 'danger' }));
         }
     });
 }
@@ -1906,22 +1906,22 @@ function executeValidate(entryId, bypassFourEyes) {
     }).then(r => {
         if (r.ok) {
             closeResultModal();
-            showSuccess('Validated');
+            showSuccess(t('reg_validated'));
             refreshWorklist();
         } else {
             r.json().then(d => {
                 if (d.four_eyes) {
                     showModal({
-                        title: 'Four-Eyes Rule',
-                        message: 'You are validating results you entered yourself.<br>This will be logged as a <b>non-conformity</b>.',
+                        title: t('reg_four_eyes'),
+                        message: t('reg_four_eyes_msg'),
                         type: 'warning',
                         actions: [
-                            { label: 'Go back', cls: 'cancel' },
-                            { label: 'Override & validate', cls: 'danger', callback: () => executeValidate(entryId, true) }
+                            { label: t('reg_go_back'), cls: 'cancel' },
+                            { label: t('reg_override_validate'), cls: 'danger', callback: () => executeValidate(entryId, true) }
                         ]
                     });
                 } else {
-                    showModal({ title: 'Error', message: d.error || 'Validation failed', type: 'danger' });
+                    showModal({ title: t('error'), message: d.error || t('failed'), type: 'danger' });
                 }
             });
         }
@@ -1936,10 +1936,10 @@ function executeUnreject(entryId) {
     }).then(r => {
         if (r.ok) {
             closeResultModal();
-            showSuccess('Restored');
+            showSuccess(t('reg_restored'));
             refreshWorklist();
         } else {
-            r.json().then(d => showModal({ title: 'Error', message: d.error || 'Unreject failed', type: 'danger' }));
+            r.json().then(d => showModal({ title: t('error'), message: d.error || t('failed'), type: 'danger' }));
         }
     });
 }
@@ -2015,10 +2015,10 @@ function submitPayload(payload) {
     }).then(r => {
         if (r.ok) {
             closeResultModal();
-            showSuccess(getCurrentLang() === 'fr' ? 'Sauvegarde' : 'Saved');
+            showSuccess(t('reg_saved'));
             refreshWorklist();
         } else {
-            r.json().then(d => showModal({ title: 'Error', message: d.error || 'Save failed', type: 'danger' }));
+            r.json().then(d => showModal({ title: t('error'), message: d.error || t('failed'), type: 'danger' }));
         }
     });
 }

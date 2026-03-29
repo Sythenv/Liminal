@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h2>Patients</h2>
+<h2 data-i18n="pat_patients">Patients</h2>
 
 <div class="export-form">
-    <input type="text" id="patientSearch" class="big-input" placeholder="Search by name or patient number...">
+    <input type="text" id="patientSearch" class="big-input" placeholder="Search by name or patient number..." data-i18n-placeholder="pat_search">
 </div>
 
 <div class="card-list" id="patientList"></div>
 <div id="patientEmpty" class="empty-state" style="display:none">
-    <p>No patients found</p>
+    <p data-i18n="pat_no_patients">No patients found</p>
 </div>
 
 <!-- PATIENT DETAIL MODAL -->
@@ -22,7 +22,7 @@
         </div>
         <div class="wizard-body" id="patientModalBody"></div>
         <div class="wizard-footer">
-            <button id="btnClosePatientFooter" class="wiz-btn wiz-btn-cancel">Close</button>
+            <button id="btnClosePatientFooter" class="wiz-btn wiz-btn-cancel" data-i18n="close">Close</button>
         </div>
     </div>
 </div>
