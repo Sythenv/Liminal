@@ -9,6 +9,7 @@ let debounceTimer = null;
 let isRegisterMode = false;
 let isWorklistMode = false;
 let worklistStatusFilter = '';
+let printConfig = null;
 
 const URGENCY_WARDS = ['URGENCES', 'EMERGENCY', 'ER', 'URG'];
 
@@ -378,6 +379,14 @@ function buildWorklistCard(entry) {
             printResults(entry.id);
         });
         printRow.appendChild(pBtn);
+        if (printConfig && printConfig.labels && printConfig.labels.enabled) {
+            const labelBtn = document.createElement('button');
+            labelBtn.className = 'card-print-btn';
+            labelBtn.style.background = 'var(--sig-normal, #2196F3)';
+            labelBtn.textContent = t('reg_print_labels');
+            labelBtn.addEventListener('click', (ev) => { ev.stopPropagation(); printSpecimenLabels(entry.id); });
+            printRow.appendChild(labelBtn);
+        }
         card.appendChild(printRow);
     }
 
@@ -414,6 +423,15 @@ function refreshWorklist() {
     else if (isRegisterMode) loadEntries();
 }
 
+// ===== PRINT CONFIG =====
+
+function loadPrintConfig() {
+    return fetch('/api/config').then(r => r.json()).then(cfg => {
+        try { printConfig = JSON.parse(cfg.print_config || '{}'); } catch(e) { printConfig = {}; }
+        return printConfig;
+    }).catch(() => { printConfig = {}; });
+}
+
 // ===== PRINT RESULTS =====
 
 function printResults(entryId) {
@@ -431,6 +449,12 @@ function printResults(entryId) {
         // Build print HTML
         const siteName = document.querySelector('.app-title')?.textContent || 'Liminal';
         const today = new Date().toISOString().split('T')[0];
+
+        let barcodeHTML = '';
+        if (printConfig && printConfig.report && printConfig.report.show_barcode) {
+            const svg = createBarcode(entry.lab_number, { height: 30, barWidth: 1.2 });
+            barcodeHTML = new XMLSerializer().serializeToString(svg);
+        }
 
         let resultsHTML = '';
         tests.forEach(t => {
@@ -481,6 +505,7 @@ function printResults(entryId) {
                 <div class="print-patient-name">${esc(entry.patient_name)}</div>
                 <div class="print-patient-meta">${esc(patientLine)}</div>
                 <div class="print-lab-number">${esc(entry.lab_number)}</div>
+                ${barcodeHTML ? '<div class="print-barcode">' + barcodeHTML + '</div>' : ''}
                 <div class="print-specimen">${esc(entry.specimen_type || '')} · Collection: ${esc(entry.collection_time || entry.reception_time || '')}</div>
             </div>
             <table class="print-results-table">
@@ -493,15 +518,84 @@ function printResults(entryId) {
                     <div>Validated by: ${esc(ctx.validated_by || '—')}</div>
                     <div>TAT: ${esc(ctx.turnaround || '—')}</div>
                 </div>
-                <div class="print-sign-line">
-                    <span>Supervisor signature: ________________________</span>
-                </div>
+                ${(!printConfig || !printConfig.report || printConfig.report.show_signatures !== false) ? '<div class="print-sign-line"><span>Supervisor signature: ________________________</span></div>' : ''}
+                ${printConfig && printConfig.report && printConfig.report.footer_text ? '<div class="print-footer-text">' + esc(printConfig.report.footer_text) + '</div>' : ''}
             </div>
         `;
 
         document.body.appendChild(div);
         window.print();
         setTimeout(() => div.remove(), 1000);
+    });
+}
+
+function printLabels(entries) {
+    if (!printConfig || !printConfig.labels) return;
+    const cfg = printConfig.labels;
+    const format = cfg.format || 'avery_2x7';
+    const copies = cfg.copies_per_specimen || 3;
+    const fields = cfg.fields || ['barcode', 'patient_name', 'specimen_type', 'collection_date'];
+
+    // Calculate grid size
+    let cellsPerPage = 14; // default 2x7
+    if (format === 'avery_3x8') cellsPerPage = 24;
+    else if (format === 'single') cellsPerPage = 1;
+
+    // Build all label cells
+    const cells = [];
+    entries.forEach(entry => {
+        for (let i = 0; i < copies; i++) {
+            let html = '';
+            if (fields.includes('barcode')) {
+                const svg = createBarcode(entry.lab_number, { height: 20, barWidth: 1 });
+                html += '<div class="label-barcode">' + new XMLSerializer().serializeToString(svg) + '</div>';
+            }
+            html += '<div class="label-lab-number">' + esc(entry.lab_number) + '</div>';
+            if (fields.includes('patient_name') && entry.patient_name) {
+                html += '<div class="label-patient">' + esc(entry.patient_name) + '</div>';
+            }
+            const meta = [];
+            if (fields.includes('specimen_type') && entry.specimen_type) meta.push(entry.specimen_type);
+            if (fields.includes('collection_date') && entry.reception_date) meta.push(entry.reception_date);
+            if (fields.includes('collection_time') && (entry.collection_time || entry.reception_time)) {
+                meta.push(entry.collection_time || entry.reception_time);
+            }
+            if (meta.length) html += '<div class="label-meta">' + esc(meta.join(' · ')) + '</div>';
+            cells.push(html);
+        }
+    });
+
+    // Build pages
+    const container = document.createElement('div');
+    container.className = 'print-labels';
+    for (let i = 0; i < cells.length; i += cellsPerPage) {
+        const page = document.createElement('div');
+        page.className = 'label-page ' + format;
+        const pageCells = cells.slice(i, i + cellsPerPage);
+        pageCells.forEach(cellHTML => {
+            const cell = document.createElement('div');
+            cell.className = 'label-cell';
+            cell.innerHTML = cellHTML;
+            page.appendChild(cell);
+        });
+        // Fill remaining cells with empty divs
+        for (let j = pageCells.length; j < cellsPerPage; j++) {
+            const empty = document.createElement('div');
+            empty.className = 'label-cell label-cell-empty';
+            page.appendChild(empty);
+        }
+        container.appendChild(page);
+    }
+
+    document.body.appendChild(container);
+    window.print();
+    setTimeout(() => container.remove(), 1000);
+}
+
+function printSpecimenLabels(entryId) {
+    fetch(`/api/register/entries?date_from=2020-01-01&date_to=2099-12-31`).then(r => r.json()).then(data => {
+        const entry = data.entries.find(e => e.id === entryId);
+        if (entry) printLabels([entry]);
     });
 }
 
@@ -709,6 +803,7 @@ function showFullRegister() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    loadPrintConfig();
     // Load tests (but NOT entries — landing mode shows nothing)
     fetch('/api/config/tests').then(r => r.json()).then(tests => {
         currentTests = tests.filter(t => t.is_active);

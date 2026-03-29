@@ -16,6 +16,66 @@
     <div id="backupList"><em data-i18n="loading">Loading...</em></div>
 </div>
 
+<!-- Printing Section -->
+<div class="sample-card" style="margin-bottom:1.5rem">
+    <h3 data-i18n="set_printing">Printing</h3>
+
+    <!-- Result Report -->
+    <h4 style="margin-top:0.5rem" data-i18n="set_result_report">Result Report</h4>
+    <div style="margin:0.5rem 0">
+        <label style="display:flex;align-items:center;gap:0.5rem;margin:0.3rem 0">
+            <input type="checkbox" id="printShowBarcode"> <span data-i18n="set_show_barcode">Show barcode on report</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:0.5rem;margin:0.3rem 0">
+            <input type="checkbox" id="printShowSignatures" checked> <span data-i18n="set_show_signatures">Show signature lines</span>
+        </label>
+        <label style="display:block;margin:0.5rem 0" data-i18n="set_footer_text">Footer text</label>
+        <input type="text" id="printFooterText" class="big-input" style="width:100%" data-i18n-placeholder="set_footer_placeholder" placeholder="e.g. laboratory address, phone...">
+    </div>
+
+    <!-- Specimen Labels -->
+    <h4 style="margin-top:1rem" data-i18n="set_specimen_labels">Specimen Labels</h4>
+    <div style="margin:0.5rem 0">
+        <label style="display:flex;align-items:center;gap:0.5rem;margin:0.3rem 0">
+            <input type="checkbox" id="labelsEnabled"> <span data-i18n="set_labels_enabled">Enable specimen labels</span>
+        </label>
+
+        <div id="labelOptions" style="margin-top:0.5rem">
+            <label style="display:block;margin:0.5rem 0" data-i18n="set_label_format">Label format</label>
+            <div id="labelFormatGroup" style="display:flex;gap:0.3rem;flex-wrap:wrap">
+                <button class="wiz-btn label-fmt-btn" data-value="avery_2x7" data-i18n="set_format_2x7">Standard 2x7</button>
+                <button class="wiz-btn label-fmt-btn" data-value="avery_3x8" data-i18n="set_format_3x8">Small 3x8</button>
+                <button class="wiz-btn label-fmt-btn" data-value="single" data-i18n="set_format_single">Single</button>
+            </div>
+
+            <label style="display:block;margin:0.5rem 0" data-i18n="set_copies">Copies per specimen</label>
+            <input type="number" id="labelCopies" class="big-input" min="1" max="10" value="3" style="width:5rem">
+
+            <label style="display:block;margin:0.5rem 0" data-i18n="set_label_fields">Fields on label</label>
+            <div style="margin:0.3rem 0">
+                <label style="display:flex;align-items:center;gap:0.5rem;margin:0.2rem 0">
+                    <input type="checkbox" class="label-field-cb" value="barcode" checked> <span data-i18n="set_field_barcode">Barcode</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:0.5rem;margin:0.2rem 0">
+                    <input type="checkbox" class="label-field-cb" value="patient_name" checked> <span data-i18n="set_field_patient">Patient name</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:0.5rem;margin:0.2rem 0">
+                    <input type="checkbox" class="label-field-cb" value="specimen_type" checked> <span data-i18n="set_field_specimen">Specimen type</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:0.5rem;margin:0.2rem 0">
+                    <input type="checkbox" class="label-field-cb" value="collection_date" checked> <span data-i18n="set_field_date">Collection date</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:0.5rem;margin:0.2rem 0">
+                    <input type="checkbox" class="label-field-cb" value="collection_time"> <span data-i18n="set_field_time">Collection time</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <button id="btnSavePrint" class="wiz-btn" style="margin-top:0.5rem" data-i18n="set_save_print">Save</button>
+    <span id="printSaveResult" style="margin-left:0.5rem;color:var(--sig-normal)"></span>
+</div>
+
 <!-- Restore Section -->
 <div class="sample-card">
     <h3 data-i18n="restore_title">Restore</h3>

@@ -1,5 +1,6 @@
 """Configuration API - site config and test menu management."""
 
+import json
 from flask import Blueprint, jsonify, request
 from app.db import get_db
 from app.audit import log_action
@@ -67,15 +68,29 @@ def update_site_config():
     db = get_db()
     data = request.get_json()
 
-    allowed_fields = ['site_name', 'site_code', 'country', 'default_language']
+    allowed_fields = ['site_name', 'site_code', 'country', 'default_language', 'print_config']
     updates = []
     values = []
 
+    # Validate and serialize print_config if present
+    if 'print_config' in data:
+        pc = data['print_config']
+        if isinstance(pc, str):
+            try:
+                pc = json.loads(pc)
+            except json.JSONDecodeError:
+                return jsonify({'error': 'print_config must be valid JSON'}), 400
+        if not isinstance(pc, dict):
+            return jsonify({'error': 'print_config must be a JSON object'}), 400
+        data['print_config'] = json.dumps(pc)
+
     for field in allowed_fields:
         if field in data:
-            val = (data[field] or '').strip()
-            if not val:
-                return jsonify({'error': f'{field} cannot be empty'}), 400
+            val = data[field]
+            if field != 'print_config':
+                val = (val or '').strip()
+                if not val:
+                    return jsonify({'error': f'{field} cannot be empty'}), 400
             updates.append(f'{field} = ?')
             values.append(val)
 
@@ -102,7 +117,8 @@ def update_site_config():
     for field in allowed_fields:
         if field in data:
             old_val = current[field] if current else None
-            audit_changes.append((field, old_val, data[field].strip()))
+            new_val = data[field].strip() if isinstance(data[field], str) and field != 'print_config' else data[field]
+            audit_changes.append((field, old_val, new_val))
 
     db.execute(f"UPDATE site_config SET {', '.join(updates)} WHERE id = ?", values)
     if audit_changes:

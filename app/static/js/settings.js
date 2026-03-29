@@ -1,12 +1,112 @@
-/* Settings page — Backup & Restore */
+/* Settings page — Backup, Restore & Print Config */
 
 document.addEventListener('DOMContentLoaded', function () {
     loadBackups();
+    loadPrintConfig();
 
     document.getElementById('btnBackupNow').addEventListener('click', createBackup);
     document.getElementById('btnRestore').addEventListener('click', restoreBackup);
+    document.getElementById('btnSavePrint').addEventListener('click', savePrintConfig);
+
+    // Label format button group
+    document.querySelectorAll('.label-fmt-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('.label-fmt-btn').forEach(function (b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+        });
+    });
+
+    // Toggle label options visibility
+    document.getElementById('labelsEnabled').addEventListener('change', function () {
+        document.getElementById('labelOptions').style.display = this.checked ? 'block' : 'none';
+    });
 });
 
+
+// ===== PRINT CONFIG =====
+
+function loadPrintConfig() {
+    authFetch('/api/config').then(function (resp) {
+        if (!resp) return;
+        resp.json().then(function (data) {
+            var pc;
+            try { pc = JSON.parse(data.print_config || '{}'); } catch (e) { pc = {}; }
+            var report = pc.report || {};
+            var labels = pc.labels || {};
+
+            // Report settings
+            document.getElementById('printShowBarcode').checked = !!report.show_barcode;
+            document.getElementById('printShowSignatures').checked = report.show_signatures !== false;
+            document.getElementById('printFooterText').value = report.footer_text || '';
+
+            // Label settings
+            var enabled = !!labels.enabled;
+            document.getElementById('labelsEnabled').checked = enabled;
+            document.getElementById('labelOptions').style.display = enabled ? 'block' : 'none';
+
+            // Format buttons
+            var fmt = labels.format || 'avery_2x7';
+            document.querySelectorAll('.label-fmt-btn').forEach(function (btn) {
+                btn.classList.toggle('active', btn.dataset.value === fmt);
+            });
+
+            // Copies
+            document.getElementById('labelCopies').value = labels.copies_per_specimen || 3;
+
+            // Field checkboxes
+            var fields = labels.fields || ['barcode', 'patient_name', 'specimen_type', 'collection_date'];
+            document.querySelectorAll('.label-field-cb').forEach(function (cb) {
+                cb.checked = fields.indexOf(cb.value) !== -1;
+            });
+        });
+    });
+}
+
+function savePrintConfig() {
+    // Gather report config
+    var report = {
+        show_barcode: document.getElementById('printShowBarcode').checked,
+        show_signatures: document.getElementById('printShowSignatures').checked,
+        footer_text: document.getElementById('printFooterText').value.trim()
+    };
+
+    // Gather label config
+    var activeFormat = document.querySelector('.label-fmt-btn.active');
+    var fields = [];
+    document.querySelectorAll('.label-field-cb:checked').forEach(function (cb) {
+        fields.push(cb.value);
+    });
+    var labels = {
+        enabled: document.getElementById('labelsEnabled').checked,
+        format: activeFormat ? activeFormat.dataset.value : 'avery_2x7',
+        copies_per_specimen: parseInt(document.getElementById('labelCopies').value, 10) || 3,
+        fields: fields
+    };
+
+    var printConfig = { report: report, labels: labels };
+
+    authFetch('/api/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ print_config: printConfig })
+    }).then(function (resp) {
+        if (!resp) return;
+        resp.json().then(function (data) {
+            var msg = document.getElementById('printSaveResult');
+            if (data.ok) {
+                msg.textContent = t('set_print_saved');
+                msg.style.color = 'var(--sig-ok)';
+            } else {
+                msg.textContent = data.error || t('failed');
+                msg.style.color = 'var(--sig-alert)';
+            }
+            setTimeout(function () { msg.textContent = ''; }, 3000);
+        });
+    });
+}
+
+
+// ===== BACKUP =====
 
 function loadBackups() {
     authFetch('/api/backup').then(function (resp) {

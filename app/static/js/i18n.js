@@ -127,6 +127,20 @@ const TRANSLATIONS = {
         set_restore_msg: 'This will <b>replace all current data</b> with the backup file. This cannot be undone.',
         set_restore: 'Restore', set_restore_failed: 'Restore failed',
 
+        // Printing
+        set_printing: 'Printing', set_result_report: 'Result Report', set_specimen_labels: 'Specimen Labels',
+        set_show_barcode: 'Show barcode on report', set_show_signatures: 'Show signature lines',
+        set_footer_text: 'Footer text', set_footer_placeholder: 'e.g. laboratory address, phone...',
+        set_label_format: 'Label format', set_copies: 'Copies per specimen',
+        set_label_fields: 'Fields on label',
+        set_field_barcode: 'Barcode', set_field_patient: 'Patient name', set_field_specimen: 'Specimen type',
+        set_field_date: 'Collection date', set_field_time: 'Collection time',
+        set_save_print: 'Save', set_print_saved: 'Print settings saved.',
+        set_labels_enabled: 'Enable specimen labels',
+        reg_print_labels: 'Labels',
+        set_format_2x7: 'Standard 2\u00d77 (Avery L7163)', set_format_3x8: 'Small 3\u00d78 (Avery L7157)',
+        set_format_single: 'Single (test)',
+
         // Export / Reports
         export_data: 'Export Data', date_from: 'From:', date_to: 'To:',
         export_excel: 'Export Excel', export_csv: 'Export CSV', export_ready: 'Export ready:',
@@ -339,6 +353,20 @@ const TRANSLATIONS = {
         set_restore_msg: 'Ceci va <b>remplacer toutes les donn\u00e9es</b> par le fichier de sauvegarde. Cette action est irr\u00e9versible.',
         set_restore: 'Restaurer', set_restore_failed: '\u00c9chec de la restauration',
 
+        // Printing
+        set_printing: 'Impression', set_result_report: 'Rapport de R\u00e9sultats', set_specimen_labels: '\u00c9tiquettes de Sp\u00e9cimens',
+        set_show_barcode: 'Afficher le code-barres sur le rapport', set_show_signatures: 'Afficher les lignes de signature',
+        set_footer_text: 'Texte de pied de page', set_footer_placeholder: 'ex. adresse du laboratoire, t\u00e9l\u00e9phone...',
+        set_label_format: 'Format d\u2019\u00e9tiquettes', set_copies: 'Copies par sp\u00e9cimen',
+        set_label_fields: 'Champs sur l\u2019\u00e9tiquette',
+        set_field_barcode: 'Code-barres', set_field_patient: 'Nom du patient', set_field_specimen: 'Type de sp\u00e9cimen',
+        set_field_date: 'Date de pr\u00e9l\u00e8vement', set_field_time: 'Heure de pr\u00e9l\u00e8vement',
+        set_save_print: 'Enregistrer', set_print_saved: 'Param\u00e8tres d\u2019impression enregistr\u00e9s.',
+        set_labels_enabled: 'Activer les \u00e9tiquettes de sp\u00e9cimens',
+        reg_print_labels: '\u00c9tiquettes',
+        set_format_2x7: 'Standard 2\u00d77 (Avery L7163)', set_format_3x8: 'Petit 3\u00d78 (Avery L7157)',
+        set_format_single: 'Unique (test)',
+
         // Export / Reports
         export_data: 'Exporter les Donn\u00e9es', date_from: 'Du :', date_to: 'Au :',
         export_excel: 'Exporter Excel', export_csv: 'Exporter CSV', export_ready: 'Export pr\u00eat :',
@@ -550,6 +578,20 @@ const TRANSLATIONS = {
         set_restore_title: '\u0627\u0633\u062a\u0639\u0627\u062f\u0629 \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a\u061f',
         set_restore_msg: '\u0633\u064a\u062a\u0645 <b>\u0627\u0633\u062a\u0628\u062f\u0627\u0644 \u062c\u0645\u064a\u0639 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a</b> \u0628\u0645\u0644\u0641 \u0627\u0644\u0646\u0633\u062e\u0629 \u0627\u0644\u0627\u062d\u062a\u064a\u0627\u0637\u064a\u0629. \u0644\u0627 \u064a\u0645\u0643\u0646 \u0627\u0644\u062a\u0631\u0627\u062c\u0639.',
         set_restore: '\u0627\u0633\u062a\u0639\u0627\u062f\u0629', set_restore_failed: '\u0641\u0634\u0644 \u0627\u0644\u0627\u0633\u062a\u0639\u0627\u062f\u0629',
+
+        // Printing
+        set_printing: '\u0627\u0644\u0637\u0628\u0627\u0639\u0629', set_result_report: '\u062a\u0642\u0631\u064a\u0631 \u0627\u0644\u0646\u062a\u0627\u0626\u062c', set_specimen_labels: '\u0645\u0644\u0635\u0642\u0627\u062a \u0627\u0644\u0639\u064a\u0646\u0627\u062a',
+        set_show_barcode: '\u0625\u0638\u0647\u0627\u0631 \u0627\u0644\u0631\u0645\u0632 \u0627\u0644\u0634\u0631\u064a\u0637\u064a \u0639\u0644\u0649 \u0627\u0644\u062a\u0642\u0631\u064a\u0631', set_show_signatures: '\u0625\u0638\u0647\u0627\u0631 \u062e\u0637\u0648\u0637 \u0627\u0644\u062a\u0648\u0642\u064a\u0639',
+        set_footer_text: '\u0646\u0635 \u0627\u0644\u062a\u0630\u064a\u064a\u0644', set_footer_placeholder: '\u0645\u062b\u0627\u0644: \u0639\u0646\u0648\u0627\u0646 \u0627\u0644\u0645\u062e\u062a\u0628\u0631\u060c \u0627\u0644\u0647\u0627\u062a\u0641...',
+        set_label_format: '\u062a\u0646\u0633\u064a\u0642 \u0627\u0644\u0645\u0644\u0635\u0642\u0627\u062a', set_copies: '\u0646\u0633\u062e \u0644\u0643\u0644 \u0639\u064a\u0646\u0629',
+        set_label_fields: '\u062d\u0642\u0648\u0644 \u0627\u0644\u0645\u0644\u0635\u0642',
+        set_field_barcode: '\u0631\u0645\u0632 \u0634\u0631\u064a\u0637\u064a', set_field_patient: '\u0627\u0633\u0645 \u0627\u0644\u0645\u0631\u064a\u0636', set_field_specimen: '\u0646\u0648\u0639 \u0627\u0644\u0639\u064a\u0646\u0629',
+        set_field_date: '\u062a\u0627\u0631\u064a\u062e \u0627\u0644\u062c\u0645\u0639', set_field_time: '\u0648\u0642\u062a \u0627\u0644\u062c\u0645\u0639',
+        set_save_print: '\u062d\u0641\u0638', set_print_saved: '\u062a\u0645 \u062d\u0641\u0638 \u0625\u0639\u062f\u0627\u062f\u0627\u062a \u0627\u0644\u0637\u0628\u0627\u0639\u0629.',
+        set_labels_enabled: '\u062a\u0641\u0639\u064a\u0644 \u0645\u0644\u0635\u0642\u0627\u062a \u0627\u0644\u0639\u064a\u0646\u0627\u062a',
+        reg_print_labels: '\u0645\u0644\u0635\u0642\u0627\u062a',
+        set_format_2x7: '\u0642\u064a\u0627\u0633\u064a 2\u00d77 (Avery L7163)', set_format_3x8: '\u0635\u063a\u064a\u0631 3\u00d78 (Avery L7157)',
+        set_format_single: '\u0645\u0641\u0631\u062f (\u0627\u062e\u062a\u0628\u0627\u0631)',
 
         // Export / Reports
         export_data: '\u062a\u0635\u062f\u064a\u0631 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a', date_from: ':\u0645\u0646', date_to: ':\u0625\u0644\u0649',
