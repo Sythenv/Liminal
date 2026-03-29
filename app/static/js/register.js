@@ -231,46 +231,58 @@ function loadWorklistEntries() {
             currentTests = data.tests || currentTests;
             let allEntries = data.entries;
 
-            // Filter by role unless "show all" is active
-            let entries;
-            if (worklistShowAll) {
-                entries = allEntries;
-            } else if (worklistLevel >= 2) {
-                // Supervisor: show REVIEW + REGISTERED + IN_PROGRESS (actionable)
-                entries = allEntries.filter(e => ['REVIEW', 'REGISTERED', 'IN_PROGRESS'].includes(e.status));
-            } else {
-                // Tech: show REGISTERED + IN_PROGRESS (their work)
-                entries = allEntries.filter(e => ['REGISTERED', 'IN_PROGRESS'].includes(e.status));
-            }
-
-            // Sort: urgency wards first, then FIFO
-            entries = sortByUrgency(entries);
-
             const container = document.getElementById('worklistCards');
             const empty = document.getElementById('worklistEmpty');
             container.innerHTML = '';
 
-            // Update toggle button text (in header) with count
-            const toggle = document.getElementById('wlToggleHeader');
-            if (toggle) {
-                toggle.textContent = (worklistShowAll ? t('wl_my_work') : t('wl_show_all')) + ' (' + entries.length + ')';
-                toggle.classList.toggle('active', worklistShowAll);
-                toggle.style.display = '';
-            }
-
-            if (entries.length === 0) {
-                empty.style.display = 'block';
-                return;
-            }
-            empty.style.display = 'none';
-
-            // Group by test type for result entry (IN_PROGRESS), flat list otherwise
-            if (!worklistShowAll && entries.some(e => e.status === 'IN_PROGRESS' || e.status === 'REGISTERED')) {
-                renderGroupedByTest(container, entries);
+            if (worklistShowAll) {
+                // Show all: flat list, no separators
+                let entries = sortByUrgency(allEntries);
+                const toggle = document.getElementById('wlToggleHeader');
+                if (toggle) {
+                    toggle.textContent = t('wl_my_work') + ' (' + entries.length + ')';
+                    toggle.classList.add('active');
+                    toggle.style.display = '';
+                }
+                if (entries.length === 0) { empty.style.display = 'block'; return; }
+                empty.style.display = 'none';
+                entries.forEach(entry => container.appendChild(buildWorklistCard(entry)));
             } else {
-                entries.forEach(entry => {
-                    container.appendChild(buildWorklistCard(entry));
-                });
+                // Work queue: actionable first, then COMPLETED today (to print)
+                const today = new Date().toISOString().split('T')[0];
+                let actionable;
+                if (worklistLevel >= 2) {
+                    actionable = allEntries.filter(e => ['REVIEW', 'REGISTERED', 'IN_PROGRESS'].includes(e.status));
+                } else {
+                    actionable = allEntries.filter(e => ['REGISTERED', 'IN_PROGRESS'].includes(e.status));
+                }
+                actionable = sortByUrgency(actionable);
+
+                const toPrint = allEntries.filter(e => e.status === 'COMPLETED' && e.reception_date === today);
+
+                const total = actionable.length + toPrint.length;
+                const toggle = document.getElementById('wlToggleHeader');
+                if (toggle) {
+                    toggle.textContent = t('wl_show_all') + ' (' + total + ')';
+                    toggle.classList.remove('active');
+                    toggle.style.display = '';
+                }
+                if (total === 0) { empty.style.display = 'block'; return; }
+                empty.style.display = 'none';
+
+                // Render actionable entries grouped by test
+                if (actionable.length > 0) {
+                    renderGroupedByTest(container, actionable);
+                }
+
+                // Render COMPLETED today with separator
+                if (toPrint.length > 0) {
+                    const sep = document.createElement('div');
+                    sep.className = 'wl-separator';
+                    sep.textContent = t('wl_to_print');
+                    container.appendChild(sep);
+                    toPrint.forEach(entry => container.appendChild(buildWorklistCard(entry)));
+                }
             }
         });
 }
@@ -904,6 +916,14 @@ function buildCard(entry) {
     statusSpan.className = `card-status ${entry.status.toLowerCase()}`;
     statusSpan.textContent = entry.status.toLowerCase().replace('_', ' ');
     top.appendChild(labNum);
+    if (entry.status === 'COMPLETED') {
+        const printIcon = document.createElement('button');
+        printIcon.className = 'card-print-icon';
+        printIcon.textContent = '\u{1F5A8}';
+        printIcon.title = t('print');
+        printIcon.addEventListener('click', (e) => { e.stopPropagation(); printEntry(entry.id); });
+        top.appendChild(printIcon);
+    }
     top.appendChild(statusSpan);
     card.appendChild(top);
 

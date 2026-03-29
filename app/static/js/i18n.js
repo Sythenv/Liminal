@@ -47,7 +47,7 @@ const TRANSLATIONS = {
         // Worklist
         wl_waiting: 'Waiting', wl_inprogress: 'In progress', wl_review: 'Review',
         wl_completed: 'Completed', wl_all: 'All', wl_empty: 'No pending samples',
-        wl_show_all: 'Show all', wl_my_work: 'My work',
+        wl_show_all: 'Show all', wl_my_work: 'My work', wl_to_print: 'To print',
 
         // Blood bank
         donors: 'Donors', stock: 'Stock', transfusions: 'Transfusions',
@@ -274,7 +274,7 @@ const TRANSLATIONS = {
         // Worklist
         wl_waiting: 'En attente', wl_inprogress: 'En cours', wl_review: 'Validation',
         wl_completed: 'Termin\u00e9s', wl_all: 'Tous', wl_empty: 'Aucun \u00e9chantillon en attente',
-        wl_show_all: 'Voir tout', wl_my_work: 'Mon travail',
+        wl_show_all: 'Voir tout', wl_my_work: 'Mon travail', wl_to_print: '\u00c0 imprimer',
 
         // Blood bank
         donors: 'Donneurs', stock: 'Stock', transfusions: 'Transfusions',
@@ -501,7 +501,7 @@ const TRANSLATIONS = {
         // Worklist
         wl_waiting: '\u0642\u064a\u062f \u0627\u0644\u0627\u0646\u062a\u0638\u0627\u0631', wl_inprogress: '\u062c\u0627\u0631\u064a', wl_review: '\u0645\u0631\u0627\u062c\u0639\u0629',
         wl_completed: '\u0645\u0643\u062a\u0645\u0644', wl_all: '\u0627\u0644\u0643\u0644', wl_empty: '\u0644\u0627 \u062a\u0648\u062c\u062f \u0639\u064a\u0646\u0627\u062a \u0645\u0639\u0644\u0642\u0629',
-        wl_show_all: '\u0639\u0631\u0636 \u0627\u0644\u0643\u0644', wl_my_work: '\u0639\u0645\u0644\u064a',
+        wl_show_all: '\u0639\u0631\u0636 \u0627\u0644\u0643\u0644', wl_my_work: '\u0639\u0645\u0644\u064a', wl_to_print: '\u0644\u0644\u0637\u0628\u0627\u0639\u0629',
 
         // Blood bank
         donors: '\u0627\u0644\u0645\u062a\u0628\u0631\u0639\u064a\u0646', stock: '\u0627\u0644\u0645\u062e\u0632\u0648\u0646', transfusions: '\u0646\u0642\u0644 \u0627\u0644\u062f\u0645',
