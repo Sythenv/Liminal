@@ -808,6 +808,16 @@ function showFullRegister() {
 
 document.addEventListener('DOMContentLoaded', () => {
     loadPrintConfig();
+
+    // Hide nav/header for landing mode (only if not already unlocked)
+    const alreadyUnlocked = typeof currentLevel !== 'undefined' && currentLevel >= 1 && typeof getSessionPin === 'function' && getSessionPin();
+    if (!alreadyUnlocked) {
+        const nav = document.getElementById('appNav');
+        const header = document.getElementById('appHeader');
+        if (nav) nav.style.display = 'none';
+        if (header) header.style.display = 'none';
+    }
+
     // Load tests (but NOT entries — landing mode shows nothing)
     fetch('/api/config/tests').then(r => r.json()).then(tests => {
         currentTests = tests.filter(t => t.is_active);
@@ -870,9 +880,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Auto-enter worklist if already unlocked (returning from another page)
-    if (typeof currentLevel !== 'undefined' && currentLevel >= 1 && typeof getSessionPin === 'function' && getSessionPin()) {
+    if (alreadyUnlocked) {
         enterWorklist(currentLevel);
-        applyNavUnlock();
     }
 });
 

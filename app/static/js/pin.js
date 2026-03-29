@@ -966,6 +966,12 @@ document.addEventListener('DOMContentLoaded', () => {
         unlockBtn.addEventListener('click', unlockNav);
     }
 
+    // Auto-unlock nav if session is still valid (works on all pages)
+    const cached = getSessionPin();
+    if (cached && currentLevel >= 1) {
+        applyNavUnlock();
+    }
+
     // Check if first-run setup is needed (no operators exist)
     fetch('/api/auth/setup', {
         method: 'POST',
