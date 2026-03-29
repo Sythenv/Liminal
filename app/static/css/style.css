@@ -132,51 +132,43 @@ body {
 .content { padding-bottom: 64px; }
 
 /* ===== WORKLIST MODE ===== */
-.worklist-header {
+/* Worklist bar: badges + toggle */
+.worklist-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 4px 4px;
+    padding: 8px 4px;
+    gap: 8px;
 }
-.worklist-operator {
-    font-size: var(--text-sm);
-    font-weight: 600;
-    color: var(--text-secondary);
-}
-.worklist-count {
-    font-size: var(--text-sm);
-    color: var(--text-light);
-}
-.worklist-tabs {
+.wl-badges {
     display: flex;
-    gap: 0;
-    border-bottom: 1px solid var(--border);
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding: 0 4px;
+    gap: 6px;
+    flex-wrap: wrap;
 }
-.worklist-tabs::-webkit-scrollbar { display: none; }
-.wl-tab {
-    flex: 0 0 auto;
-    background: transparent;
-    border: none;
-    padding: 10px 14px;
+.wl-badge {
     font-size: 11px;
     font-weight: 700;
-    color: var(--gray);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
+    padding: 3px 10px;
+    border-radius: 12px;
     white-space: nowrap;
-    transition: color 0.15s, border-color 0.15s;
 }
-.wl-tab:hover { color: var(--text-secondary); }
-.wl-tab.active {
-    color: var(--primary);
-    border-bottom-color: var(--primary);
+.wl-badge-waiting { background: var(--sig-alert-bg, #fff3e0); color: var(--sig-alert, #e65100); }
+.wl-badge-inprogress { background: #e3f2fd; color: #1565c0; }
+.wl-badge-review { background: #f3e5f5; color: #6a1b9a; }
+.wl-badge-completed { background: var(--sig-ok-bg, #e8f5e9); color: var(--sig-ok, #2e7d32); }
+.wl-toggle {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    color: var(--gray);
 }
+.wl-toggle:hover { background: var(--light-gray); }
+.wl-toggle.active { background: var(--primary); color: var(--white); border-color: var(--primary); }
 .card-tat {
     font-size: 11px;
     font-weight: 700;
@@ -189,10 +181,6 @@ body {
 .tat-red { color: var(--sig-alert); background: var(--sig-alert-bg); }
 #worklistCards {
     padding-bottom: 80px;
-}
-.worklist-footer {
-    text-align: center;
-    padding: 16px 0 80px;
 }
 
 /* Review enrichment on cards */
@@ -405,19 +393,6 @@ body {
 .dashboard-footer {
     text-align: center;
     padding: 8px 0 40px;
-}
-.dashboard-all-btn {
-    background: transparent;
-    border: none;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-light);
-    cursor: pointer;
-    transition: color 0.2s;
-    letter-spacing: 0.5px;
-}
-.dashboard-all-btn:hover {
-    color: var(--primary);
 }
 
 /* ===== LANDING MODE ===== */

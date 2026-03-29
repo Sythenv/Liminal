@@ -205,9 +205,14 @@ function enterRegisterMode() {
 
 // ===== WORKLIST MODE =====
 
+let worklistShowAll = false;
+let worklistLevel = 1;
+
 function enterWorklist(level) {
     isWorklistMode = true;
     isRegisterMode = false;
+    worklistLevel = level;
+    worklistShowAll = false;
     document.getElementById('landingMode').style.display = 'none';
     document.getElementById('worklistMode').style.display = 'block';
     document.getElementById('btnNewEntry').style.display = 'flex';
@@ -216,54 +221,46 @@ function enterWorklist(level) {
     if (nav) nav.style.display = '';
     if (header) header.style.display = '';
 
-    // Show operator name
-    const opEl = document.getElementById('worklistOperator');
-    if (opEl && currentOperatorName) opEl.textContent = currentOperatorName;
-
-    // Configure tabs based on level
-    configureTabs(level);
-
-    // Load entries for default tab
-    const activeTab = document.querySelector('.wl-tab.active');
-    if (activeTab) loadWorklistEntries(activeTab.dataset.status);
+    loadWorklistEntries();
 }
 
-function configureTabs(level) {
-    const tabs = document.querySelectorAll('.wl-tab');
-    tabs.forEach(t => t.classList.remove('active'));
-
-    if (level >= 2) {
-        // Supervisor/admin: default to REVIEW
-        const tab = document.querySelector('.wl-tab[data-status="REVIEW"]');
-        if (tab) tab.classList.add('active');
-    } else {
-        // Labtech: default to REGISTERED (en attente)
-        const tab = document.querySelector('.wl-tab[data-status="REGISTERED"]');
-        if (tab) tab.classList.add('active');
-    }
-}
-
-function loadWorklistEntries(statusFilter) {
-    worklistStatusFilter = statusFilter;
-    const url = statusFilter
-        ? `/api/register/entries?date_from=2020-01-01&date_to=2099-12-31&status=${statusFilter}`
-        : `/api/register/entries?date_from=2020-01-01&date_to=2099-12-31`;
-
-    fetch(url)
+function loadWorklistEntries() {
+    fetch('/api/register/entries?date_from=2020-01-01&date_to=2099-12-31')
         .then(r => r.json())
         .then(data => {
             currentTests = data.tests || currentTests;
-            let entries = data.entries;
+            let allEntries = data.entries;
 
-            // Sort: urgency wards first, then FIFO (oldest first)
+            // Count by status for badges
+            const counts = { REGISTERED: 0, IN_PROGRESS: 0, REVIEW: 0, COMPLETED: 0 };
+            allEntries.forEach(e => { if (counts[e.status] !== undefined) counts[e.status]++; });
+            renderWorklistBadges(counts);
+
+            // Filter by role unless "show all" is active
+            let entries;
+            if (worklistShowAll) {
+                entries = allEntries;
+            } else if (worklistLevel >= 2) {
+                // Supervisor: show REVIEW + REGISTERED + IN_PROGRESS (actionable)
+                entries = allEntries.filter(e => ['REVIEW', 'REGISTERED', 'IN_PROGRESS'].includes(e.status));
+            } else {
+                // Tech: show REGISTERED + IN_PROGRESS (their work)
+                entries = allEntries.filter(e => ['REGISTERED', 'IN_PROGRESS'].includes(e.status));
+            }
+
+            // Sort: urgency wards first, then FIFO
             entries = sortByUrgency(entries);
 
             const container = document.getElementById('worklistCards');
             const empty = document.getElementById('worklistEmpty');
-            const countEl = document.getElementById('worklistCount');
             container.innerHTML = '';
 
-            countEl.textContent = entries.length + ' ' + t('reg_samples');
+            // Update toggle button text
+            const toggle = document.getElementById('wlToggle');
+            if (toggle) {
+                toggle.textContent = worklistShowAll ? t('wl_my_work') : t('wl_show_all');
+                toggle.classList.toggle('active', worklistShowAll);
+            }
 
             if (entries.length === 0) {
                 empty.style.display = 'block';
@@ -275,6 +272,26 @@ function loadWorklistEntries(statusFilter) {
                 container.appendChild(buildWorklistCard(entry));
             });
         });
+}
+
+function renderWorklistBadges(counts) {
+    const container = document.getElementById('worklistBadges');
+    if (!container) return;
+    container.innerHTML = '';
+    const badges = [
+        { key: 'REGISTERED', label: t('wl_waiting'), cls: 'wl-badge-waiting' },
+        { key: 'IN_PROGRESS', label: t('wl_inprogress'), cls: 'wl-badge-inprogress' },
+        { key: 'REVIEW', label: t('wl_review'), cls: 'wl-badge-review' },
+        { key: 'COMPLETED', label: t('wl_completed'), cls: 'wl-badge-completed' }
+    ];
+    badges.forEach(b => {
+        if (counts[b.key] > 0) {
+            const el = document.createElement('span');
+            el.className = 'wl-badge ' + b.cls;
+            el.textContent = counts[b.key] + ' ' + b.label;
+            container.appendChild(el);
+        }
+    });
 }
 
 function sortByUrgency(entries) {
@@ -861,17 +878,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Button group handlers
     setupButtonGroups();
 
-    // Worklist tabs
-    document.querySelectorAll('.wl-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            document.querySelectorAll('.wl-tab').forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            loadWorklistEntries(tab.dataset.status);
-        });
-    });
-    document.getElementById('btnShowAll').addEventListener('click', () => {
-        document.getElementById('worklistMode').style.display = 'none';
-        enterRegisterMode();
+    // Worklist toggle (show all / my work)
+    document.getElementById('wlToggle').addEventListener('click', () => {
+        worklistShowAll = !worklistShowAll;
+        loadWorklistEntries();
     });
 
     // Listen for nav unlock to switch to worklist

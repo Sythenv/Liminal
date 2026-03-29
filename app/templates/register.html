@@ -100,24 +100,14 @@
 
 <!-- ===== WORKLIST MODE (role-aware — after PIN unlock) ===== -->
 <div id="worklistMode" style="display:none">
-    <div class="worklist-header">
-        <span class="worklist-operator" id="worklistOperator"></span>
-        <span class="worklist-count" id="worklistCount"></span>
-    </div>
-    <div class="worklist-tabs" id="worklistTabs">
-        <button class="wl-tab" data-status="REGISTERED" data-i18n="wl_waiting">En attente</button>
-        <button class="wl-tab" data-status="IN_PROGRESS" data-i18n="wl_inprogress">En cours</button>
-        <button class="wl-tab" data-status="REVIEW" data-i18n="wl_review">Review</button>
-        <button class="wl-tab" data-status="COMPLETED" data-i18n="wl_completed">Terminés</button>
-        <button class="wl-tab" data-status="" data-i18n="wl_all">Tous</button>
+    <div class="worklist-bar">
+        <div class="wl-badges" id="worklistBadges"></div>
+        <button class="wl-toggle" id="wlToggle" data-i18n="wl_show_all">Show all</button>
     </div>
     <div class="card-list" id="worklistCards"></div>
     <div id="worklistEmpty" class="empty-state" style="display:none">
         <div class="empty-icon">&#9989;</div>
         <p data-i18n="wl_empty">No pending samples</p>
-    </div>
-    <div class="worklist-footer">
-        <button id="btnShowAll" class="dashboard-all-btn" data-i18n="all_entries">All entries</button>
     </div>
 </div>
 
