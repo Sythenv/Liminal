@@ -84,20 +84,13 @@ def create_app(config_path=None):
     # Input validation: reject oversized payloads
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max (backup restore)
 
-    # Bind safety: restrict to allowed hosts
+    # Bind safety: restrict to localhost unless LAN mode enabled
     @app.before_request
     def check_host():
-        allowed = {'127.0.0.1', 'localhost'}
         bind_host = app.config.get('HOST', '127.0.0.1')
         if bind_host == '0.0.0.0':
-            import socket
-            try:
-                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                s.connect(('10.255.255.255', 1))
-                allowed.add(s.getsockname()[0])
-                s.close()
-            except Exception:
-                pass
+            return  # LAN mode: accept all connections
+        allowed = {'127.0.0.1', 'localhost'}
         host = request.host.split(':')[0]
         if host not in allowed:
             return jsonify({'error': 'Access denied'}), 403
