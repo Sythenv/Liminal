@@ -1,32 +1,62 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h2 data-i18n="rpt_monthly">Monthly Report</h2>
+<h2 data-i18n="nav_reports">Reports</h2>
 
-<div class="export-form">
-    <div class="form-grid">
-        <div class="form-group">
-            <label data-i18n="rpt_month">Month</label>
-            <select id="reportMonth">
-                <!-- Populated by JS with Intl month names -->
-            </select>
+<!-- Monthly PDF Report -->
+<div class="sample-card" style="margin-bottom:1.5rem">
+    <h3 data-i18n="rpt_monthly">Monthly Report</h3>
+    <div class="export-form">
+        <div class="form-grid">
+            <div class="form-group">
+                <label data-i18n="rpt_month">Month</label>
+                <select id="reportMonth">
+                    <!-- Populated by JS with Intl month names -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label data-i18n="rpt_year">Year</label>
+                <input type="number" id="reportYear" min="2020" max="2099">
+            </div>
         </div>
-        <div class="form-group">
-            <label data-i18n="rpt_year">Year</label>
-            <input type="number" id="reportYear" min="2020" max="2099">
+        <div class="form-actions">
+            <button id="btnGenerateReport" class="btn btn-primary" data-i18n="rpt_generate">Generate PDF Report</button>
+        </div>
+
+        <div id="reportResult" style="display:none" class="export-result">
+            <p id="reportSummary"></p>
+            <a id="reportLink" href="#" class="btn btn-primary" data-i18n="rpt_download">Download PDF</a>
+        </div>
+
+        <div id="reportError" style="display:none" class="export-error">
+            <p id="reportErrorText"></p>
         </div>
     </div>
-    <div class="form-actions">
-        <button id="btnGenerateReport" class="btn btn-primary" data-i18n="rpt_generate">Generate PDF Report</button>
-    </div>
+</div>
 
-    <div id="reportResult" style="display:none" class="export-result">
-        <p id="reportSummary"></p>
-        <a id="reportLink" href="#" class="btn btn-primary" data-i18n="rpt_download">Download PDF</a>
-    </div>
+<!-- Data Export -->
+<div class="sample-card">
+    <h3 data-i18n="export_data">Export Data</h3>
+    <div class="export-form">
+        <div class="form-grid">
+            <div class="form-group">
+                <label data-i18n="date_from">From:</label>
+                <input type="date" id="exportFrom">
+            </div>
+            <div class="form-group">
+                <label data-i18n="date_to">To:</label>
+                <input type="date" id="exportTo">
+            </div>
+        </div>
+        <div class="form-actions">
+            <button id="btnExportExcel" class="btn btn-primary" data-i18n="export_excel">Export Excel</button>
+            <button id="btnExportCsv" class="btn" data-i18n="export_csv">Export CSV</button>
+        </div>
 
-    <div id="reportError" style="display:none" class="export-error">
-        <p id="reportErrorText"></p>
+        <div id="exportResult" style="display:none" class="export-result">
+            <p data-i18n="export_ready">Export ready:</p>
+            <a id="exportLink" href="#" class="btn btn-primary" data-i18n="download">Download</a>
+        </div>
     </div>
 </div>
 
@@ -34,4 +64,5 @@
 
 {% block scripts %}
 <script src="/static/js/reports.js"></script>
+<script src="/static/js/export.js"></script>
 {% endblock %}

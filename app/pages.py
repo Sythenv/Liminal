@@ -1,6 +1,6 @@
 """Page routes - serve HTML templates."""
 
-from flask import Blueprint, render_template, current_app
+from flask import Blueprint, render_template, redirect, current_app
 
 bp = Blueprint('pages', __name__)
 
@@ -21,9 +21,7 @@ def reports():
 
 @bp.route('/export')
 def export():
-    return render_template('export.html',
-                           site_name=current_app.config['SITE_NAME'],
-                           lang=current_app.config['DEFAULT_LANGUAGE'])
+    return redirect('/reports')
 
 
 @bp.route('/patients')
