@@ -3,7 +3,7 @@
 const TRANSLATIONS = {
     en: {
         // Nav
-        nav_register: 'Register', nav_equipment: 'Equipment', nav_reports: 'Reports',
+        nav_register: 'Register', nav_worklist: 'Worklist', nav_equipment: 'Equipment', nav_reports: 'Reports',
         nav_patients: 'Patients', nav_bloodbank: 'Blood Bank', nav_export: 'Export', nav_settings: 'Settings',
 
         // Common
@@ -229,7 +229,7 @@ const TRANSLATIONS = {
 
     fr: {
         // Nav
-        nav_register: 'Registre', nav_equipment: '\u00c9quip.', nav_reports: 'Rapports',
+        nav_register: 'Registre', nav_worklist: 'Travail', nav_equipment: '\u00c9quip.', nav_reports: 'Rapports',
         nav_patients: 'Patients', nav_bloodbank: 'Sang', nav_export: 'Export', nav_settings: 'Config',
 
         // Common
@@ -455,7 +455,7 @@ const TRANSLATIONS = {
 
     ar: {
         // Nav
-        nav_register: '\u0627\u0644\u0633\u062c\u0644', nav_equipment: '\u0627\u0644\u0645\u0639\u062f\u0627\u062a', nav_reports: '\u0627\u0644\u062a\u0642\u0627\u0631\u064a\u0631',
+        nav_register: '\u0627\u0644\u0633\u062c\u0644', nav_worklist: '\u0627\u0644\u0645\u0647\u0627\u0645', nav_equipment: '\u0627\u0644\u0645\u0639\u062f\u0627\u062a', nav_reports: '\u0627\u0644\u062a\u0642\u0627\u0631\u064a\u0631',
         nav_patients: '\u0627\u0644\u0645\u0631\u0636\u0649', nav_bloodbank: '\u0628\u0646\u0643 \u0627\u0644\u062f\u0645', nav_export: '\u062a\u0635\u062f\u064a\u0631', nav_settings: '\u0625\u0639\u062f\u0627\u062f\u0627\u062a',
 
         // Common

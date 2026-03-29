@@ -951,6 +951,11 @@ function unlockNav() {
     const cached = getSessionPin();
     if (cached && currentLevel > 0) {
         applyNavUnlock();
+        // If on register page and still showing landing, enter worklist
+        const landing = document.getElementById('landingMode');
+        if (landing && landing.style.display !== 'none') {
+            document.dispatchEvent(new CustomEvent('navUnlocked', { detail: { level: currentLevel } }));
+        }
         return;
     }
     showNumpad(pin => {
@@ -993,7 +998,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Wire nav unlock button
     const unlockBtn = document.getElementById('navUnlockBtn');
     if (unlockBtn) {
-        unlockBtn.addEventListener('click', unlockNav);
+        unlockBtn.addEventListener('click', () => {
+            // If already unlocked and not on register page, navigate there
+            const cached = getSessionPin();
+            if (cached && currentLevel > 0 && !document.getElementById('landingMode')) {
+                window.location.href = '/register';
+                return;
+            }
+            unlockNav();
+        });
     }
 
     // Auto-unlock nav if session is still valid (works on all pages)
