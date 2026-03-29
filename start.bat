@@ -1,5 +1,6 @@
 @echo off
 title Liminal
+cd /d "%~dp0"
 echo ==========================================
 echo   Liminal — Laboratory Register
 echo   Starting... please wait
@@ -33,7 +34,7 @@ set PYTHONPATH=%~dp0lib;%~dp0;%PYTHONPATH%
 if not exist "data" mkdir data
 if not exist "data\exports" mkdir data\exports
 
-start "" cmd /c "timeout /t 2 >nul && start http://127.0.0.1:5000"
+start "" cmd /c "for /L %%i in (1,1,30) do (powershell -Command \"try { (Invoke-WebRequest -Uri http://127.0.0.1:5000 -UseBasicParsing -TimeoutSec 1).StatusCode } catch { exit 1 }\" >nul 2>&1 && start http://127.0.0.1:5000 && exit /b || timeout /t 1 >nul)"
 echo Server running at http://127.0.0.1:5000
 echo Press Ctrl+C to stop
 %PYTHON% -m app.run

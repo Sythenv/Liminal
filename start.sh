@@ -28,8 +28,8 @@ fi
 export PYTHONPATH="$SCRIPT_DIR/lib:$SCRIPT_DIR:$PYTHONPATH"
 mkdir -p data/exports
 
-# Open browser after delay
-(sleep 2 && xdg-open http://127.0.0.1:5000 2>/dev/null || true) &
+# Open browser once server is ready
+(for i in $(seq 1 30); do curl -s -o /dev/null http://127.0.0.1:5000 && xdg-open http://127.0.0.1:5000 2>/dev/null && break || sleep 1; done) &
 
 echo ""
 echo "  Server running at http://127.0.0.1:5000"
