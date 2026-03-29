@@ -231,11 +231,6 @@ function loadWorklistEntries() {
             currentTests = data.tests || currentTests;
             let allEntries = data.entries;
 
-            // Count by status for badges
-            const counts = { REGISTERED: 0, IN_PROGRESS: 0, REVIEW: 0, COMPLETED: 0 };
-            allEntries.forEach(e => { if (counts[e.status] !== undefined) counts[e.status]++; });
-            renderWorklistBadges(counts);
-
             // Filter by role unless "show all" is active
             let entries;
             if (worklistShowAll) {
@@ -255,10 +250,10 @@ function loadWorklistEntries() {
             const empty = document.getElementById('worklistEmpty');
             container.innerHTML = '';
 
-            // Update toggle button text (in header)
+            // Update toggle button text (in header) with count
             const toggle = document.getElementById('wlToggleHeader');
             if (toggle) {
-                toggle.textContent = worklistShowAll ? t('wl_my_work') : t('wl_show_all');
+                toggle.textContent = (worklistShowAll ? t('wl_my_work') : t('wl_show_all')) + ' (' + entries.length + ')';
                 toggle.classList.toggle('active', worklistShowAll);
                 toggle.style.display = '';
             }
@@ -275,25 +270,6 @@ function loadWorklistEntries() {
         });
 }
 
-function renderWorklistBadges(counts) {
-    const container = document.getElementById('worklistBadges');
-    if (!container) return;
-    container.innerHTML = '';
-    const badges = [
-        { key: 'REGISTERED', label: t('wl_waiting'), cls: 'wl-badge-waiting' },
-        { key: 'IN_PROGRESS', label: t('wl_inprogress'), cls: 'wl-badge-inprogress' },
-        { key: 'REVIEW', label: t('wl_review'), cls: 'wl-badge-review' },
-        { key: 'COMPLETED', label: t('wl_completed'), cls: 'wl-badge-completed' }
-    ];
-    badges.forEach(b => {
-        if (counts[b.key] > 0) {
-            const el = document.createElement('span');
-            el.className = 'wl-badge ' + b.cls;
-            el.textContent = counts[b.key] + ' ' + b.label;
-            container.appendChild(el);
-        }
-    });
-}
 
 function sortByUrgency(entries) {
     return entries.sort((a, b) => {

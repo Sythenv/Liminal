@@ -132,30 +132,6 @@ body {
 .content { padding-bottom: 64px; }
 
 /* ===== WORKLIST MODE ===== */
-/* Worklist bar: badges + toggle */
-.worklist-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 4px;
-    gap: 8px;
-}
-.wl-badges {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-}
-.wl-badge {
-    font-size: 11px;
-    font-weight: 700;
-    padding: 3px 10px;
-    border-radius: 12px;
-    white-space: nowrap;
-}
-.wl-badge-waiting { background: var(--sig-alert-bg, #fff3e0); color: var(--sig-alert, #e65100); }
-.wl-badge-inprogress { background: #e3f2fd; color: #1565c0; }
-.wl-badge-review { background: #f3e5f5; color: #6a1b9a; }
-.wl-badge-completed { background: var(--sig-ok-bg, #e8f5e9); color: var(--sig-ok, #2e7d32); }
 .wl-toggle {
     background: none;
     border: 1px solid var(--border);
