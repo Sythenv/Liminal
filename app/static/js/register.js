@@ -1661,8 +1661,8 @@ function openResults(entryId, prefetchedEntry) {
             const fields = document.getElementById('resultFields');
             fields.innerHTML = '';
 
-            currentTests.forEach(t => {
-                const r = entry.results[t.code];
+            currentTests.forEach(td => {
+                const r = entry.results[td.code];
                 if (!r || !r.requested) return;
 
                 const currentVal = r.result_value || '';
@@ -1672,14 +1672,14 @@ function openResults(entryId, prefetchedEntry) {
 
                 const nameDiv = document.createElement('div');
                 nameDiv.className = 'result-item-name';
-                nameDiv.textContent = t.name_en;
+                nameDiv.textContent = td.name_en;
                 item.appendChild(nameDiv);
 
                 if (isReadOnly) {
-                    if (STRUCTURED_TESTS[t.code] && currentVal) {
+                    if (STRUCTURED_TESTS[td.code] && currentVal) {
                         const display = document.createElement('div');
                         display.className = 'result-readonly';
-                        display.textContent = formatStructuredBadge(t.code, currentVal);
+                        display.textContent = formatStructuredBadge(td.code, currentVal);
                         item.appendChild(display);
                     } else {
                         const readOnly = document.createElement('div');
@@ -1687,7 +1687,7 @@ function openResults(entryId, prefetchedEntry) {
                         readOnly.textContent = currentVal || '\u2014';
                         item.appendChild(readOnly);
                     }
-                } else if (t.result_type === 'POSITIVE_NEGATIVE') {
+                } else if (td.result_type === 'POSITIVE_NEGATIVE') {
                     const container = document.createElement('div');
                     container.className = 'posneg-btns';
                     ['POS', 'NEG'].forEach(val => {
@@ -1695,13 +1695,13 @@ function openResults(entryId, prefetchedEntry) {
                         btn.type = 'button';
                         btn.className = `posneg-btn ${val.toLowerCase()} ${currentVal === val ? 'selected' : ''}`;
                         btn.textContent = val;
-                        btn.dataset.code = t.code;
+                        btn.dataset.code = td.code;
                         btn.dataset.value = val;
-                        btn.addEventListener('click', () => selectPosNeg(btn, t.code, val));
+                        btn.addEventListener('click', () => selectPosNeg(btn, td.code, val));
                         container.appendChild(btn);
                     });
                     item.appendChild(container);
-                } else if (t.result_type === 'BLOOD_GROUP') {
+                } else if (td.result_type === 'BLOOD_GROUP') {
                     const container = document.createElement('div');
                     container.className = 'bg-btns';
                     ['A+','A-','B+','B-','AB+','AB-','O+','O-'].forEach(bg => {
@@ -1709,26 +1709,26 @@ function openResults(entryId, prefetchedEntry) {
                         btn.type = 'button';
                         btn.className = `bg-btn ${currentVal === bg ? 'selected' : ''}`;
                         btn.textContent = bg;
-                        btn.dataset.code = t.code;
+                        btn.dataset.code = td.code;
                         btn.dataset.value = bg;
-                        btn.addEventListener('click', () => selectBG(btn, t.code, bg));
+                        btn.addEventListener('click', () => selectBG(btn, td.code, bg));
                         container.appendChild(btn);
                     });
                     item.appendChild(container);
-                } else if (t.result_type === 'NUMERIC') {
+                } else if (td.result_type === 'NUMERIC') {
                     const container = document.createElement('div');
                     container.className = 'result-numeric';
                     const input = document.createElement('input');
                     input.type = 'number';
                     input.step = 'any';
                     input.value = currentVal;
-                    input.dataset.code = t.code;
+                    input.dataset.code = td.code;
                     input.className = 'result-input';
-                    input.addEventListener('input', () => checkPanicValue(input, t));
+                    input.addEventListener('input', () => checkPanicValue(input, td));
                     container.appendChild(input);
                     const unit = document.createElement('span');
                     unit.className = 'result-unit';
-                    unit.textContent = t.unit || '';
+                    unit.textContent = td.unit || '';
                     container.appendChild(unit);
 
                     const warning = document.createElement('div');
@@ -1739,14 +1739,14 @@ function openResults(entryId, prefetchedEntry) {
                     item.appendChild(container);
                     item.appendChild(warning);
 
-                    if (currentVal) checkPanicValue(input, t);
-                } else if (STRUCTURED_TESTS[t.code]) {
-                    renderStructuredField(item, t, currentVal, isRejected);
+                    if (currentVal) checkPanicValue(input, td);
+                } else if (STRUCTURED_TESTS[td.code]) {
+                    renderStructuredField(item, td, currentVal, isRejected);
                 } else {
                     const input = document.createElement('input');
                     input.type = 'text';
                     input.value = currentVal;
-                    input.dataset.code = t.code;
+                    input.dataset.code = td.code;
                     input.className = 'result-text-input result-input';
                     item.appendChild(input);
                 }
@@ -1776,7 +1776,8 @@ function openResults(entryId, prefetchedEntry) {
             .then(data => {
                 const entry = data.entries.find(e => e.id === entryId);
                 if (entry) render(entry);
-            });
+            })
+            .catch(err => console.error('openResults fetch error:', err));
     }
 }
 
