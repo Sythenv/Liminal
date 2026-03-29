@@ -156,6 +156,7 @@ body {
 .tat-orange { color: #e65100; background: var(--warning-bg); }
 .tat-red { color: var(--sig-alert); background: var(--sig-alert-bg); }
 #worklistCards {
+    padding-top: 12px;
     padding-bottom: 80px;
 }
 
