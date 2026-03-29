@@ -621,6 +621,7 @@ body {
     font-weight: 700;
 }
 .lang-switcher { display: flex; gap: 2px; }
+.header-pills { display: flex; gap: 4px; align-items: center; }
 .lang-btn {
     background: var(--light-gray);
     border: 1px solid var(--border);

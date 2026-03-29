@@ -739,10 +739,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Language switcher buttons
-    document.querySelectorAll('.lang-btn').forEach(btn => {
+    document.querySelectorAll('.lang-btn[data-lang]').forEach(btn => {
         if (btn.dataset.lang === lang) btn.classList.add('active');
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.lang-btn[data-lang]').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             setLang(btn.dataset.lang);
             // Reload page to re-render dynamic content
