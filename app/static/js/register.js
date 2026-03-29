@@ -367,26 +367,18 @@ function buildWorklistCard(entry) {
         }
     }
 
-    // Print button for COMPLETED entries
+    // Print button — prints everything enabled in config (report + labels)
     if (entry.status === 'COMPLETED') {
         const printRow = document.createElement('div');
         printRow.className = 'card-actions';
         const pBtn = document.createElement('button');
         pBtn.className = 'card-print-btn';
-        pBtn.textContent = t('reg_print');
+        pBtn.textContent = t('print');
         pBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            printResults(entry.id);
+            printEntry(entry.id);
         });
         printRow.appendChild(pBtn);
-        if (printConfig && printConfig.labels && printConfig.labels.enabled) {
-            const labelBtn = document.createElement('button');
-            labelBtn.className = 'card-print-btn';
-            labelBtn.style.background = 'var(--sig-normal, #2196F3)';
-            labelBtn.textContent = t('reg_print_labels');
-            labelBtn.addEventListener('click', (ev) => { ev.stopPropagation(); printSpecimenLabels(entry.id); });
-            printRow.appendChild(labelBtn);
-        }
         card.appendChild(printRow);
     }
 
@@ -597,6 +589,18 @@ function printSpecimenLabels(entryId) {
         const entry = data.entries.find(e => e.id === entryId);
         if (entry) printLabels([entry]);
     });
+}
+
+function printEntry(entryId) {
+    // Single button: print everything enabled in config
+    const hasLabels = printConfig && printConfig.labels && printConfig.labels.enabled;
+
+    // Always print result report, then labels if enabled
+    // We chain them: report first, then labels after a short delay
+    printResults(entryId);
+    if (hasLabels) {
+        setTimeout(() => printSpecimenLabels(entryId), 1500);
+    }
 }
 
 function loadDashboard() {
