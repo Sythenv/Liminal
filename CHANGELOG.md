@@ -1,5 +1,44 @@
 # Changelog
 
+## [v0.5.0-alpha] — 2026-03-29
+
+### Multilingual, impression, securite, refonte UX
+
+L'application parle maintenant francais, anglais et arabe. Les etiquettes specimens
+s'impriment sur des planches Avery standard. L'interface a ete simplifiee : un seul
+menu en bas de l'ecran, des cartes uniformes, et un filtre intelligent qui montre a
+chaque operateur ce qu'il a a faire.
+
+### Nouveau
+- **Traduction complete** — toute l'interface en anglais, francais et arabe (280 cles)
+- **Impression configurable** — etiquettes specimens (Avery 2x7, 3x8) avec code-barres Code 128, rapport de resultats ameliore (code-barres optionnel, pied de page, signatures)
+- **Page Impression dans Settings** — l'administrateur choisit le format d'etiquettes, les champs a afficher, le nombre de copies par specimen
+- **Mode demo** — `LIMINAL_DEMO=1` pre-charge 3 operateurs (0777/0755/0644), 8 patients et 6 echantillons dans tous les statuts
+- **Bouton deconnexion** dans le header (a cote des langues)
+- **Nom de l'operateur** affiche dans le header apres connexion
+
+### Securite
+- **Hashage PIN renforce** — SHA-256 remplace par scrypt (brute-force offline passe de <1ms a ~8h pour un PIN 4 chiffres). Migration automatique des anciens hash au prochain login.
+- **Rate limiting global** — 5 echecs PIN → verrouillage 60s, log en audit trail
+- **Verrouillage inactivite** — 5 minutes sans interaction → session effacee, retour au PIN
+
+### UX
+- **Menu unifie** — barre de navigation en bas sur tous les ecrans (desktop = mobile), icones + textes
+- **Filtre par role** — le technicien voit ses echantillons a traiter, le superviseur voit ceux a valider. Un bouton "Show all" pour tout afficher.
+- **Cartes uniformes** — plus de boutons sur les cartes, toutes les actions (valider, rejeter, imprimer) sont dans le detail au clic
+- **Reports + Export fusionnes** — une seule page au lieu de deux
+- **Patients accessible a tous** les operateurs (niveau 1+)
+- **Navigation coherente** — plus de saut de layout entre les pages, auto-unlock si session active
+
+### Corrections
+- Race condition au login (verify async avant unlock nav)
+- Cache navigateur servait l'ancien JS (desactive en dev)
+- Bouton vert (+) cache par le menu du bas
+- Chevauchement texte/lien sur la page rapports
+- Page Patients n'affichait rien (fetch sans PIN)
+
+---
+
 ## [v0.4.0-alpha] — 2026-03-29
 
 ### Mobile & UX overhaul, worklist, result validation
