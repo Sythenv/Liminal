@@ -264,12 +264,56 @@ function loadWorklistEntries() {
             }
             empty.style.display = 'none';
 
-            entries.forEach(entry => {
-                container.appendChild(buildWorklistCard(entry));
-            });
+            // Group by test type for result entry (IN_PROGRESS), flat list otherwise
+            if (!worklistShowAll && entries.some(e => e.status === 'IN_PROGRESS' || e.status === 'REGISTERED')) {
+                renderGroupedByTest(container, entries);
+            } else {
+                entries.forEach(entry => {
+                    container.appendChild(buildWorklistCard(entry));
+                });
+            }
         });
 }
 
+
+function renderGroupedByTest(container, entries) {
+    // Build groups: {test_code: [entries]}
+    const groups = {};
+    const ungrouped = [];
+    entries.forEach(entry => {
+        const codes = Object.keys(entry.results || {}).filter(c => entry.results[c].requested);
+        if (codes.length === 0) {
+            ungrouped.push(entry);
+            return;
+        }
+        codes.forEach(code => {
+            if (!groups[code]) groups[code] = [];
+            if (!groups[code].find(e => e.id === entry.id)) {
+                groups[code].push(entry);
+            }
+        });
+    });
+
+    // Render each group with a header
+    const testNames = {};
+    currentTests.forEach(t => { testNames[t.code] = t.name_en || t.code; });
+
+    Object.keys(groups).sort().forEach(code => {
+        const header = document.createElement('div');
+        header.className = 'wl-group-header';
+        header.textContent = testNames[code] || code;
+        container.appendChild(header);
+
+        groups[code].forEach(entry => {
+            container.appendChild(buildWorklistCard(entry));
+        });
+    });
+
+    // Ungrouped entries at the end
+    ungrouped.forEach(entry => {
+        container.appendChild(buildWorklistCard(entry));
+    });
+}
 
 function sortByUrgency(entries) {
     return entries.sort((a, b) => {
