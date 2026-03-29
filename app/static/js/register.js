@@ -295,87 +295,6 @@ function buildWorklistCard(entry) {
     const top = card.querySelector('.card-top');
     if (top) top.appendChild(tatEl);
 
-    // REVIEW enrichment: show entered_by + validate button
-    if (entry.status === 'REVIEW') {
-        const reviewInfo = document.createElement('div');
-        reviewInfo.className = 'card-review-info';
-        reviewInfo.textContent = '...';
-        card.appendChild(reviewInfo);
-
-        // Fetch context async (entered_by, panic flags)
-        fetch(`/api/register/entries/${entry.id}/context`)
-            .then(r => r.json())
-            .then(ctx => {
-                const parts = [];
-                if (ctx.entered_by) parts.push(ctx.entered_by.replace('Tech. ', '').replace('Sup. ', ''));
-                if (ctx.turnaround) parts.push(ctx.turnaround);
-                if (ctx.ward) parts.push(ctx.ward);
-                reviewInfo.textContent = parts.join(' · ') || '';
-
-                // Panic flags on test badges
-                if (ctx.panic_thresholds) {
-                    card.querySelectorAll('.card-test-badge').forEach(badge => {
-                        const text = badge.textContent;
-                        const code = text.split(':')[0].trim();
-                        const val = entry.results[code]?.result_value;
-                        if (!val) return;
-                        const thresh = ctx.panic_thresholds[code];
-                        if (!thresh) return;
-                        if (STRUCTURED_TESTS[code]) {
-                            try {
-                                const parsed = JSON.parse(val);
-                                STRUCTURED_TESTS[code].fields.forEach(f => {
-                                    if (f.type === 'numeric' && parsed[f.key]) {
-                                        const v = parseFloat(parsed[f.key]);
-                                        if ((f.panic_low != null && v < f.panic_low) || (f.panic_high != null && v > f.panic_high)) {
-                                            badge.classList.add('card-panic');
-                                        }
-                                    }
-                                });
-                            } catch(e) {}
-                        } else {
-                            const numVal = parseFloat(val);
-                            if (!isNaN(numVal)) {
-                                if ((thresh.low != null && numVal < thresh.low) || (thresh.high != null && numVal > thresh.high)) {
-                                    badge.classList.add('card-panic');
-                                }
-                            }
-                        }
-                    });
-                }
-            });
-
-        // Validate button (L2+ only)
-        if (currentLevel >= 2) {
-            const btnRow = document.createElement('div');
-            btnRow.className = 'card-actions';
-            const vBtn = document.createElement('button');
-            vBtn.className = 'card-validate-btn';
-            vBtn.textContent = t('reg_validate');
-            vBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                executeValidate(entry.id);
-            });
-            btnRow.appendChild(vBtn);
-            card.appendChild(btnRow);
-        }
-    }
-
-    // Print button — prints everything enabled in config (report + labels)
-    if (entry.status === 'COMPLETED') {
-        const printRow = document.createElement('div');
-        printRow.className = 'card-actions';
-        const pBtn = document.createElement('button');
-        pBtn.className = 'card-print-btn';
-        pBtn.textContent = t('print');
-        pBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            printEntry(entry.id);
-        });
-        printRow.appendChild(pBtn);
-        card.appendChild(printRow);
-    }
-
     return card;
 }
 
@@ -1657,11 +1576,32 @@ function openResults(entryId, prefetchedEntry) {
 
                         fields.insertBefore(ctxDiv, fields.firstChild);
                     });
+            } else if (entry.status === 'COMPLETED') {
+                banner.style.display = 'none';
+                banner.style.background = '';
+                resultFooter.style.display = 'flex';
+                rejectFooter.style.display = 'none';
+                // Replace save button with print button
+                const saveBtn = document.getElementById('btnSaveResults');
+                if (saveBtn) saveBtn.style.display = 'none';
+                const existingPrint = document.getElementById('btnPrintFromModal');
+                if (existingPrint) existingPrint.remove();
+                const printBtn = document.createElement('button');
+                printBtn.id = 'btnPrintFromModal';
+                printBtn.className = 'wiz-btn wiz-btn-confirm';
+                printBtn.textContent = t('print');
+                printBtn.addEventListener('click', () => printEntry(entry.id));
+                resultFooter.appendChild(printBtn);
             } else {
                 banner.style.display = 'none';
                 banner.style.background = '';
                 resultFooter.style.display = 'flex';
                 rejectFooter.style.display = 'flex';
+                // Restore save button if hidden by COMPLETED view
+                const saveBtn = document.getElementById('btnSaveResults');
+                if (saveBtn) saveBtn.style.display = '';
+                const existingPrint = document.getElementById('btnPrintFromModal');
+                if (existingPrint) existingPrint.remove();
                 resetSaveButton();
                 const rejectBtn = document.getElementById('btnStartReject');
                 if (rejectBtn) {
