@@ -1175,8 +1175,8 @@ function buildConfirmSummary() {
 
     const lang = getCurrentLang();
     const testNames = wizardData.requested_tests.map(code => {
-        const t = currentTests.find(t => t.code === code);
-        return t ? (lang === 'fr' ? t.name_fr : t.name_en) : code;
+        const td = currentTests.find(x => x.code === code);
+        return td ? (lang === 'fr' ? td.name_fr : td.name_en) : code;
     });
 
     // Build confirm summary with DOM API
