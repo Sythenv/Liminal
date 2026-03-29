@@ -183,6 +183,9 @@ function _lockOnIdle() {
     currentLevel = 0;
     currentOperatorName = null;
     sessionStorage.removeItem('liminal_session');
+    // Clear operator name from header
+    const opEl = document.getElementById('headerOperator');
+    if (opEl) opEl.textContent = '';
     // Reload to reset UI state (landing mode, locked nav)
     location.reload();
 }
@@ -973,14 +976,15 @@ function unlockNav() {
 }
 
 function applyNavUnlock() {
-    const btn = document.getElementById('navUnlockBtn');
     document.querySelectorAll('.nav-locked').forEach(link => {
         const required = parseInt(link.dataset.unlock);
         if (currentLevel >= required) {
             link.classList.add('unlocked');
         }
     });
-    // navUnlockBtn removed from DOM — unlock handled by landing page cadenas
+    // Show operator name in header
+    const opEl = document.getElementById('headerOperator');
+    if (opEl && currentOperatorName) opEl.textContent = currentOperatorName;
     document.dispatchEvent(new CustomEvent('navUnlocked', { detail: { level: currentLevel } }));
 }
 

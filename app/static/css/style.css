@@ -89,6 +89,8 @@ body {
     letter-spacing: 1px;
 }
 .app-title { font-weight: 700; font-size: var(--text-base); }
+.app-operator { font-size: var(--text-sm); color: var(--gray); font-weight: 400; }
+.app-operator:not(:empty)::before { content: '\2014\00a0'; }
 .header-right { display: flex; align-items: center; gap: 8px; }
 
 /* ===== NAV BAR (bottom bar, unified desktop + mobile) ===== */
