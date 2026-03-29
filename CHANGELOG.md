@@ -20,6 +20,8 @@
 - Missing i18n keys for equipment, patients, bloodbank nav
 - Mobile nav: icon + short label bottom bar
 - Host check simplified for LAN mode (skip filter on `0.0.0.0`)
+- `start.bat`: set working directory (`cd /d %~dp0`) for standalone kit compatibility
+- `start.bat` + `start.sh`: wait for server ready before opening browser (replaces fixed 2s delay)
 
 ### Changed
 - Audit trail 100% coverage + onboarding redesign
