@@ -255,11 +255,12 @@ function loadWorklistEntries() {
             const empty = document.getElementById('worklistEmpty');
             container.innerHTML = '';
 
-            // Update toggle button text
-            const toggle = document.getElementById('wlToggle');
+            // Update toggle button text (in header)
+            const toggle = document.getElementById('wlToggleHeader');
             if (toggle) {
                 toggle.textContent = worklistShowAll ? t('wl_my_work') : t('wl_show_all');
                 toggle.classList.toggle('active', worklistShowAll);
+                toggle.style.display = '';
             }
 
             if (entries.length === 0) {
@@ -878,8 +879,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Button group handlers
     setupButtonGroups();
 
-    // Worklist toggle (show all / my work)
-    document.getElementById('wlToggle').addEventListener('click', () => {
+    // Worklist toggle (in header, show all / my work)
+    document.getElementById('wlToggleHeader').addEventListener('click', () => {
         worklistShowAll = !worklistShowAll;
         loadWorklistEntries();
     });
