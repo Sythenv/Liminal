@@ -685,10 +685,14 @@ body {
     background: var(--white);
     border-radius: var(--radius);
     padding: 14px 16px;
+    min-height: 88px;
     border-left: 5px solid var(--border);
     box-shadow: var(--shadow);
     cursor: pointer;
     transition: transform 0.1s;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 .sample-card:active { transform: scale(0.98); }
 .sample-card.status-completed { border-left-color: var(--green); }
