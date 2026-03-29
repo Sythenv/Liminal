@@ -164,12 +164,22 @@ def entry_context(entry_id):
 
     # Reference ranges for all requested tests
     reference_ranges = {}
-    ref_rows = db.execute('''SELECT td.code, td.reference_low, td.reference_high, td.unit
+    ref_rows = db.execute('''SELECT td.code, td.reference_range_text, td.unit
         FROM lab_result lr JOIN test_definition td ON td.id = lr.test_id
         WHERE lr.register_id = ? AND lr.requested = 1''', (entry_id,)).fetchall()
     for t in ref_rows:
+        # Parse "low - high" format from reference_range_text
+        low, high = None, None
+        ref_text = t['reference_range_text'] or ''
+        if ' - ' in ref_text:
+            parts = ref_text.split(' - ')
+            try:
+                low = float(parts[0])
+                high = float(parts[1])
+            except (ValueError, IndexError):
+                pass
         reference_ranges[t['code']] = {
-            'low': t['reference_low'], 'high': t['reference_high'], 'unit': t['unit']
+            'low': low, 'high': high, 'unit': t['unit'], 'text': ref_text
         }
 
     # Validation info (from audit log)
