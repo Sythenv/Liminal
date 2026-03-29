@@ -963,15 +963,17 @@ function unlockNav() {
     }
     showNumpad(pin => {
         currentPin = pin;
-        // Verify and cache session
+        // Verify PIN, then unlock nav with correct level
         fetch('/api/auth/verify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ pin: pin })
         }).then(r => r.json()).then(data => {
-            if (data.id) setSession(pin, data.level, data.name);
+            if (data.id) {
+                setSession(pin, data.level, data.name);
+                applyNavUnlock();
+            }
         });
-        applyNavUnlock();
     }, t('pin_unlock'));
 }
 
