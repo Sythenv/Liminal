@@ -10,6 +10,7 @@ __version__ = 'dev'
 def create_app(config_path=None):
     app = Flask(__name__)
     app.config['VERSION'] = __version__
+    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0  # Disable static file caching in dev
 
     # Load site config
     if config_path is None:
