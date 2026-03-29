@@ -1637,6 +1637,7 @@ function openResults(entryId, prefetchedEntry) {
                 printBtn.addEventListener('click', () => printEntry(entry.id));
                 resultFooter.appendChild(printBtn);
             } else {
+                // REGISTERED / IN_PROGRESS — editable
                 banner.style.display = 'none';
                 banner.style.background = '';
                 resultFooter.style.display = 'flex';
@@ -1647,11 +1648,14 @@ function openResults(entryId, prefetchedEntry) {
                 const existingPrint = document.getElementById('btnPrintFromModal');
                 if (existingPrint) existingPrint.remove();
                 resetSaveButton();
-                const rejectBtn = document.getElementById('btnStartReject');
-                if (rejectBtn) {
-                    rejectBtn.replaceWith(rejectBtn.cloneNode(true));
-                    document.getElementById('btnStartReject').addEventListener('click', startRejectFlow);
-                }
+                // Recreate reject button (may have been destroyed by REVIEW mode)
+                rejectFooter.innerHTML = '';
+                const newRejectBtn = document.createElement('button');
+                newRejectBtn.id = 'btnStartReject';
+                newRejectBtn.className = 'wiz-btn reject-btn';
+                newRejectBtn.textContent = t('reject_sample');
+                newRejectBtn.addEventListener('click', startRejectFlow);
+                rejectFooter.appendChild(newRejectBtn);
             }
 
             const fields = document.getElementById('resultFields');
