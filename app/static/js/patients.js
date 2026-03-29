@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function loadPatients(query) {
     const url = query ? '/api/patients?q=' + encodeURIComponent(query) : '/api/patients';
-    fetch(url).then(r => r.json()).then(patients => {
+    authFetch(url).then(r => r.json()).then(patients => {
         const list = document.getElementById('patientList');
         const empty = document.getElementById('patientEmpty');
         list.innerHTML = '';
@@ -46,7 +46,7 @@ function loadPatients(query) {
 }
 
 function openPatientDetail(patientId) {
-    fetch('/api/patients/' + patientId)
+    authFetch('/api/patients/' + patientId)
         .then(r => r.json())
         .then(data => {
             document.getElementById('patientNumber').textContent = data.patient_number;
