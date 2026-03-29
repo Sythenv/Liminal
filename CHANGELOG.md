@@ -1,5 +1,32 @@
 # Changelog
 
+## [v0.4.0-alpha] — 2026-03-29
+
+### Mobile & UX overhaul, worklist, result validation
+
+### Added
+- **Worklist** with role-based task model and result validation workflow
+- **Patient linkage** across lab register and blood bank
+- **Mobile UX** — bottom nav bar with icons, larger touch targets, active states
+- **Mobile review** — card-based layout replacing review table
+- **Print results** — A4 report template with CSS `@media print`
+- **Fuzzy search** — token-based split with AND matching
+- **Wizard autosave** — state persisted in sessionStorage
+- **LAN access** — `LIMINAL_HOST=0.0.0.0` to serve on local network
+- README with Liminal logo, SECURITY.md, GPL v3 license
+
+### Fixed
+- 5 edge-case bugs: workflow guards, expiry check, race condition
+- Missing i18n keys for equipment, patients, bloodbank nav
+- Mobile nav: icon + short label bottom bar
+- Host check simplified for LAN mode (skip filter on `0.0.0.0`)
+
+### Changed
+- Audit trail 100% coverage + onboarding redesign
+- RFC rewritten as roles & worklist operational spec
+
+---
+
 ## [v0.1.0-alpha] — 2026-03-27
 
 First release. Standalone kits Linux + Windows (Python embarqué, 0 dépendance).
